@@ -1,5 +1,6 @@
 package com.modern.tools;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -16,9 +17,8 @@ public interface MapConverter<T extends ConvertConfig> {
     void setConvertConfig(T config);
 
     /**
-     * 输出目标 Map
-     * @return Map
+     * 根据源数据输出目标数据
      */
-    Map<String, Object> toMap(Object source);
+    List<Map<String, Object>> toListMap(Object source);
 
 }

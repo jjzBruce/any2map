@@ -1,9 +1,8 @@
 package com.modern.tools.xlsx;
 
 import com.modern.tools.ConvertConfig;
-import org.apache.commons.compress.utils.Lists;
 
-import java.util.List;
+import java.util.*;
 
 /**
  * Xlsx Convert Config
@@ -13,13 +12,27 @@ import java.util.List;
  */
 public class XlsxConvertConfig implements ConvertConfig {
 
-    /**
-     * 需要处理的 sheet 下标
-     */
-    private List<Integer> sheetIndexes = Lists.newArrayList();
+    private Map<Integer, SheetDataConfig> sheetDataConfigs = new TreeMap<>(Comparator.comparingInt(x -> x));
 
+    private SheetDataRange defaultDataRange = new SheetDataRange();
 
-    public List<Integer> getSheetIndexes() {
-        return sheetIndexes;
+    public SheetDataRange getDefaultDataRange() {
+        return defaultDataRange;
+    }
+
+    public void setDefaultDataRange(SheetDataRange defaultDataRange) {
+        this.defaultDataRange = defaultDataRange;
+    }
+
+    public Map<Integer, SheetDataConfig> getSheetDataConfigs() {
+        return sheetDataConfigs;
+    }
+
+    public void addSheetDataConfig(SheetDataConfig sheetDataConfig) {
+        this.sheetDataConfigs.put(sheetDataConfig.getSheetIndex(), sheetDataConfig);
+    }
+
+    public void setSheetDataConfigs(Map<Integer, SheetDataConfig> sheetDataConfigs) {
+        this.sheetDataConfigs = sheetDataConfigs;
     }
 }

@@ -1,7 +1,5 @@
 package com.modern.tools;
 
-import java.util.Map;
-
 /**
  * main
  *

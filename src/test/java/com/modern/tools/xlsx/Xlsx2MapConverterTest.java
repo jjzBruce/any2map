@@ -1,5 +1,6 @@
 package com.modern.tools.xlsx;
 
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -17,10 +18,26 @@ public class Xlsx2MapConverterTest {
 
     @Test
     public void test() {
-        try (InputStream is = Thread.currentThread().getClass().getResourceAsStream("excel.xlsx")) {
+        try (InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream("excel.xlsx")) {
             Xlsx2MapConverter x2m = new Xlsx2MapConverter();
             List<Map<String, Object>> listMap = x2m.toListMap(is);
-            System.out.println(listMap);
+            Assert.assertTrue(listMap.isEmpty());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Test
+    public void test2() {
+        try (InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream("excel.xlsx")) {
+            Xlsx2MapConverter x2m2 = new Xlsx2MapConverter();
+            XlsxConvertConfig config2 = new XlsxConvertConfig();
+            SheetDataConfig sheetDataConfig = new SheetDataConfig();
+            config2.addSheetDataConfig(sheetDataConfig);
+            x2m2.setConvertConfig(config2);
+            System.out.println(x2m2.getConfig());
+            List<Map<String, Object>> listMap2 = x2m2.toListMap(is);
+            System.out.println(listMap2);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

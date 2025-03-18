@@ -16,7 +16,6 @@ public class SheetDataRange {
     private Integer dataColumnStart = 1;
     private Integer dataColumnEnd;
 
-
     public Integer getDataRowStart() {
         return dataRowStart;
     }
@@ -59,5 +58,17 @@ public class SheetDataRange {
 
     public void setHeadRowEnd(Integer headRowEnd) {
         this.headRowEnd = headRowEnd;
+    }
+
+    @Override
+    public String toString() {
+        return "SheetDataRange{" +
+                "headRowStart=" + headRowStart +
+                ", headRowEnd=" + headRowEnd +
+                ", dataRowStart=" + dataRowStart +
+                ", dataRowEnd=" + dataRowEnd +
+                ", dataColumnStart=" + dataColumnStart +
+                ", dataColumnEnd=" + dataColumnEnd +
+                '}';
     }
 }

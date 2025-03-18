@@ -10,7 +10,7 @@ import java.util.Objects;
  */
 public class SheetDataConfig {
 
-    private Integer sheetIndex;
+    private Integer sheetIndex = 0;
     private String sheetKey;
     private SheetDataRange sheetDataRange;
 
@@ -56,6 +56,15 @@ public class SheetDataConfig {
     @Override
     public int hashCode() {
         return Objects.hash(sheetIndex, sheetKey, sheetDataRange);
+    }
+
+    @Override
+    public String toString() {
+        return "SheetDataConfig{" +
+                "sheetIndex=" + sheetIndex +
+                ", sheetKey='" + sheetKey + '\'' +
+                ", sheetDataRange=" + sheetDataRange +
+                '}';
     }
 }
 

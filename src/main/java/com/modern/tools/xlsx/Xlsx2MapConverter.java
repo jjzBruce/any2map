@@ -27,6 +27,10 @@ public class Xlsx2MapConverter implements MapConverter<XlsxConvertConfig> {
 
     private XlsxConvertConfig config = new XlsxConvertConfig();
 
+    public XlsxConvertConfig getConfig() {
+        return config;
+    }
+
     /**
      * 转换设置
      *
@@ -56,7 +60,7 @@ public class Xlsx2MapConverter implements MapConverter<XlsxConvertConfig> {
             int numberOfSheets = workbook.getNumberOfSheets();
             Map<Integer, SheetDataConfig> sheetDataConfigs = config.getSheetDataConfigs();
             for (int i = 0; i < numberOfSheets; i++) {
-                if (sheetDataConfigs.size() == 0 || sheetDataConfigs.keySet().contains(i)) {
+                if (sheetDataConfigs.keySet().contains(i)) {
                     SheetDataConfig sheetDataConfig = sheetDataConfigs.get(i);
                     SheetDataRange sheetDataRange = sheetDataConfig.getSheetDataRange();
                     if (sheetDataRange == null) {
@@ -77,8 +81,9 @@ public class Xlsx2MapConverter implements MapConverter<XlsxConvertConfig> {
         return listMap;
     }
 
-    public void convertSheetData(Sheet sheet, String sheetName, int headRowStart, int dataRowStart, Integer dataRowEnd,
-                                 int dataColumnStart, int dataColumnEnd,
+    public void convertSheetData(Sheet sheet, String sheetName,
+                                 Integer headRowStart,
+                                 Integer dataRowStart, Integer dataRowEnd, Integer dataColumnStart, Integer dataColumnEnd,
                                  List<Map<String, Object>> mapList, BiPredicate<Object, Object>... skipRowTest) {
         long start = System.currentTimeMillis();
         // 列标题缓存，key:列下标
@@ -95,9 +100,15 @@ public class Xlsx2MapConverter implements MapConverter<XlsxConvertConfig> {
 
             // 匹配列标题
             if (headRowStart == rowNum) {
+                Integer lastCellNum;
+                if(dataColumnEnd == null) {
+                    lastCellNum = Short.valueOf(row.getLastCellNum()).intValue();
+                } else {
+                    lastCellNum = dataColumnEnd;
+                }
                 for (Cell cell : row) {
                     int j = cell.getColumnIndex();
-                    if (j >= dataColumnEnd) {
+                    if (j >= lastCellNum) {
                         break;
                     }
                     if (j >= dataColumnStart) {

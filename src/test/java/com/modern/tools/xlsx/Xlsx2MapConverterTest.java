@@ -1,5 +1,6 @@
 package com.modern.tools.xlsx;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -18,9 +19,9 @@ public class Xlsx2MapConverterTest {
 
     @Test
     public void test() {
-        try (InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream("excel.xlsx")) {
+        try (InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream("test2.xlsx")) {
             Xlsx2MapConverter x2m = new Xlsx2MapConverter();
-            List<Map<String, Object>> listMap = x2m.toListMap(is);
+            Map<String, Object> listMap = x2m.toMap(is);
             Assert.assertTrue(listMap.isEmpty());
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -29,15 +30,18 @@ public class Xlsx2MapConverterTest {
 
     @Test
     public void test2() {
-        try (InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream("excel.xlsx")) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        try (InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream("test2.xlsx")) {
             Xlsx2MapConverter x2m2 = new Xlsx2MapConverter();
             XlsxConvertConfig config2 = new XlsxConvertConfig();
             SheetDataConfig sheetDataConfig = new SheetDataConfig();
             config2.addSheetDataConfig(sheetDataConfig);
             x2m2.setConvertConfig(config2);
-            System.out.println(x2m2.getConfig());
-            List<Map<String, Object>> listMap2 = x2m2.toListMap(is);
-            System.out.println(listMap2);
+            String configJson = objectMapper.writeValueAsString(x2m2.getConfig());
+            System.out.println(configJson);
+            Map<String, Object> map = x2m2.toMap(is);
+            String json = objectMapper.writeValueAsString(map);
+            System.out.println(json);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

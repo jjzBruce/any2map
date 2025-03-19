@@ -19,6 +19,6 @@ public interface MapConverter<T extends ConvertConfig> {
     /**
      * 根据源数据输出目标数据
      */
-    List<Map<String, Object>> toListMap(Object source);
+    Map<String, Object> toMap(Object source);
 
 }

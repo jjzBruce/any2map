@@ -20,10 +20,6 @@ public class XlsxConvertConfig implements ConvertConfig {
         return defaultDataRange;
     }
 
-    public void setDefaultDataRange(SheetDataRange defaultDataRange) {
-        this.defaultDataRange = defaultDataRange;
-    }
-
     public Map<Integer, SheetDataConfig> getSheetDataConfigs() {
         return sheetDataConfigs;
     }
@@ -31,10 +27,5 @@ public class XlsxConvertConfig implements ConvertConfig {
     public void addSheetDataConfig(SheetDataConfig sheetDataConfig) {
         this.sheetDataConfigs.put(sheetDataConfig.getSheetIndex(), sheetDataConfig);
     }
-
-    public void setSheetDataConfigs(Map<Integer, SheetDataConfig> sheetDataConfigs) {
-        this.sheetDataConfigs = sheetDataConfigs;
-    }
-
 
 }

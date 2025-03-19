@@ -8,12 +8,12 @@ package com.modern.tools.xlsx;
  */
 public class SheetDataRange {
 
-    private Integer headRowStart = 1;
+    private Integer headRowStart = 0;
     private Integer headRowEnd;
 
-    private Integer dataRowStart = 2;
+    private Integer dataRowStart = 1;
     private Integer dataRowEnd;
-    private Integer dataColumnStart = 1;
+    private Integer dataColumnStart = 0;
     private Integer dataColumnEnd;
 
     public Integer getDataRowStart() {

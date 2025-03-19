@@ -1,17 +1,13 @@
 package com.modern.tools.xlsx;
 
+import com.microsoft.schemas.office.visio.x2012.main.CellType;
 import com.modern.tools.MapConverter;
-import com.monitorjbl.xlsx.StreamingReader;
-import org.apache.poi.ss.usermodel.*;
+import com.sun.rowset.internal.Row;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.FileInputStream;
 import java.text.SimpleDateFormat;
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.time.temporal.WeekFields;
 import java.util.*;
 import java.util.function.BiPredicate;
 
@@ -47,42 +43,40 @@ public class Xlsx2MapConverter implements MapConverter<XlsxConvertConfig> {
      * @return Map
      */
     @Override
-    public List<Map<String, Object>> toListMap(Object source) {
-        InputStream is = null;
-        if (source instanceof InputStream) {
-            is = (InputStream) source;
-        }
+    public Map<String, Object> toMap(Object source) {
+        Map<String, Object> map = new LinkedHashMap<>();
 
-        List<Map<String, Object>> listMap = new ArrayList<>();
-        try (Workbook workbook = StreamingReader.builder().rowCacheSize(10 * 10).bufferSize(1024 * 4)
-                //打开资源，可以是InputStream或者是File，注意：只能打开.xlsx格式的文件
-                .open(is)) {
-            int numberOfSheets = workbook.getNumberOfSheets();
-            Map<Integer, SheetDataConfig> sheetDataConfigs = config.getSheetDataConfigs();
-            for (int i = 0; i < numberOfSheets; i++) {
-                if (sheetDataConfigs.keySet().contains(i)) {
-                    SheetDataConfig sheetDataConfig = sheetDataConfigs.get(i);
-                    SheetDataRange sheetDataRange = sheetDataConfig.getSheetDataRange();
-                    if (sheetDataRange == null) {
-                        sheetDataRange = config.getDefaultDataRange();
-                    }
-                    Sheet sheet = workbook.getSheetAt(i);
-                    convertSheetData(sheet, sheetDataConfig.getSheetKey(),
-                            sheetDataRange.getHeadRowStart(),
-                            sheetDataRange.getDataRowStart(), sheetDataRange.getDataRowEnd(), sheetDataRange.getDataColumnStart(), sheetDataRange.getDataColumnEnd(),
-                            listMap
-                    );
-                }
+        try (FileInputStream file = new FileInputStream(new File(source))) {
+            Workbook workbook;
+            // 根据文件扩展名判断文件类型
+            if (filePath.endsWith(".xlsx")) {
+                workbook = new XSSFWorkbook(file);
+            } else if (filePath.endsWith(".xls")) {
+                workbook = new HSSFWorkbook(file);
+            } else {
+                throw new IllegalArgumentException("不支持的文件格式");
             }
-        } catch (IOException e) {
-            log.error(e.getMessage(), e);
-            return null;
+
+            Map<Integer, SheetDataConfig> sheetDataConfigs = config.getSheetDataConfigs();
+            for (Integer sheetNo : sheetDataConfigs.keySet()) {
+                List<Map<String, Object>> listMap = new ArrayList<>();
+                SheetDataConfig sheetDataConfig = sheetDataConfigs.get(i);
+                SheetDataRange sheetDataRange = sheetDataConfig.getSheetDataRange();
+                if (sheetDataRange == null) {
+                    sheetDataRange = config.getDefaultDataRange();
+                }
+                Sheet sheet = workbook.getSheetAt(0);
+                convertSheetData(sheet, sheetDataRange.getHeadRowStart(),
+                        sheetDataRange.getDataRowStart(), sheetDataRange.getDataRowEnd(), sheetDataRange.getDataColumnStart(), sheetDataRange.getDataColumnEnd(),
+                        listMap
+                );
+                map.put(sheet.getSheetName(), listMap);
+            }
         }
-        return listMap;
+        return map;
     }
 
-    public void convertSheetData(Sheet sheet, String sheetName,
-                                 Integer headRowStart,
+    public void convertSheetData(Sheet sheet, Integer headRowStart,
                                  Integer dataRowStart, Integer dataRowEnd, Integer dataColumnStart, Integer dataColumnEnd,
                                  List<Map<String, Object>> mapList, BiPredicate<Object, Object>... skipRowTest) {
         long start = System.currentTimeMillis();
@@ -90,6 +84,8 @@ public class Xlsx2MapConverter implements MapConverter<XlsxConvertConfig> {
         Map<Integer, String> headValueCache = new HashMap<>();
         // 最小的有效函数
         int minRowIndex = Math.min(headRowStart, dataRowStart);
+        // 缓存跨行夸列的信息，key：坐标(x,y)
+        Map<String, Object> cellMergedValueCache = new HashMap<>();
         // 提取数据
         row:
         for (Row row : sheet) {
@@ -97,11 +93,10 @@ public class Xlsx2MapConverter implements MapConverter<XlsxConvertConfig> {
             if (rowNum < minRowIndex) {
                 continue;
             }
-
             // 匹配列标题
             if (headRowStart == rowNum) {
                 Integer lastCellNum;
-                if(dataColumnEnd == null) {
+                if (dataColumnEnd == null) {
                     lastCellNum = Short.valueOf(row.getLastCellNum()).intValue();
                 } else {
                     lastCellNum = dataColumnEnd;
@@ -117,11 +112,9 @@ public class Xlsx2MapConverter implements MapConverter<XlsxConvertConfig> {
                 }
                 continue;
             }
-
             if (dataRowEnd != null && row.getRowNum() >= dataRowEnd) {
                 break;
             }
-
             if (row.getRowNum() >= dataRowStart) {
                 Map<String, Object> map = new LinkedHashMap<>();
                 //遍历所有的列
@@ -131,38 +124,34 @@ public class Xlsx2MapConverter implements MapConverter<XlsxConvertConfig> {
                         continue;
                     }
 
-                    Object cellValue = getCellValue(cell);
-                    String head1 = headValueCache.get(j);
-
+                    String xy = i + "," + j;
+                    Object cellValue;
+                    if(cellMergedValueCache.containsKey(xy)) {
+                        cellValue = cellMergedValueCache.get(xy);
+                    } else {
+                        cellValue = getCellValue(cell);
+                        CellRangeAddress cellMerged = getCellMerged(sheet, cell);
+                        if(cellMerged != null) {
+                            for (int k = cellMerged.getFirstRow(); k < cellMerged.getLastRow(); k++) {
+                                for (int l = cellMerged.getFirstColumn(); l < cellMerged.getLastColumn(); l++) {
+                                    String xxyy = k + "," + l;
+                                    cellMergedValueCache.put(xxyy, cellValue);
+                                }
+                            }
+                        }
+                    }
+                    String head = headValueCache.get(j);
                     // 不处理的情况
                     if (skipRowTest != null) {
                         for (BiPredicate<Object, Object> test : skipRowTest) {
-                            if (test.test(head1, cellValue)) {
+                            if (test.test(head, cellValue)) {
                                 continue row;
                             }
                         }
                     }
-
-                    // 数据齐平处理
-                    if (Objects.equals("", cellValue)) {
-                        cellValue = 0D;
-                    }
-
-                    map.put(head1, cellValue);
-                    // 对日期的数据再次存入 周次 与 月 信息
-                    if ("日期".equals(head1)) {
-                        try {
-                            Date date = (Date) cellValue;
-                            LocalDate localDate = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-                            map.put("周次", "WK" + localDate.get(WeekFields.of(Locale.getDefault()).weekOfWeekBasedYear()));
-                            map.put("月", localDate.getMonth().getValue());
-                        } catch (Throwable ignore) {
-                            // NOP
-                        }
-                    }
+                    map.put(head, cellValue);
                 }
                 if (map.size() >= headValueCache.size() - 1) {
-                    map.put("sheet", sheetName);
                     mapList.add(map);
                 }
             }
@@ -222,4 +211,21 @@ public class Xlsx2MapConverter implements MapConverter<XlsxConvertConfig> {
         }
     }
 
+    /**
+     * 获取单元格的合并信息
+     *
+     * @param sheet 工作表
+     * @param cell  单元格
+     * @return 如果单元格位于合并区域内合并信息
+     */
+    public CellRangeAddress getCellMerged(Sheet sheet, Cell cell) {
+        int numMergedRegions = sheet.getNumMergedRegions();
+        for (int i = 0; i < numMergedRegions; i++) {
+            CellRangeAddress mergedRegion = sheet.getMergedRegion(i);
+            if (mergedRegion.isInRange(cell.getRowIndex(), cell.getColumnIndex())) {
+                return mergedRegion;
+            }
+        }
+        return null;
+    }
 }

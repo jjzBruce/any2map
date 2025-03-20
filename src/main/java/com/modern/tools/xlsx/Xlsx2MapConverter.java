@@ -1,12 +1,13 @@
 package com.modern.tools.xlsx;
 
-import com.microsoft.schemas.office.visio.x2012.main.CellType;
 import com.modern.tools.MapConverter;
-import com.sun.rowset.internal.Row;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileInputStream;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.function.BiPredicate;
@@ -44,35 +45,37 @@ public class Xlsx2MapConverter implements MapConverter<XlsxConvertConfig> {
      */
     @Override
     public Map<String, Object> toMap(Object source) {
+        InputStream is = null;
+        if (source instanceof InputStream) {
+            is = (InputStream) source;
+        }
         Map<String, Object> map = new LinkedHashMap<>();
-
-        try (FileInputStream file = new FileInputStream(new File(source))) {
-            Workbook workbook;
-            // 根据文件扩展名判断文件类型
-            if (filePath.endsWith(".xlsx")) {
-                workbook = new XSSFWorkbook(file);
-            } else if (filePath.endsWith(".xls")) {
-                workbook = new HSSFWorkbook(file);
-            } else {
+        Workbook workbook;
+        try {
+            workbook = new XSSFWorkbook(is);
+        } catch (Throwable e) {
+            try {
+                workbook = new HSSFWorkbook(is);
+            } catch (Throwable e1) {
                 throw new IllegalArgumentException("不支持的文件格式");
             }
-
-            Map<Integer, SheetDataConfig> sheetDataConfigs = config.getSheetDataConfigs();
-            for (Integer sheetNo : sheetDataConfigs.keySet()) {
-                List<Map<String, Object>> listMap = new ArrayList<>();
-                SheetDataConfig sheetDataConfig = sheetDataConfigs.get(i);
-                SheetDataRange sheetDataRange = sheetDataConfig.getSheetDataRange();
-                if (sheetDataRange == null) {
-                    sheetDataRange = config.getDefaultDataRange();
-                }
-                Sheet sheet = workbook.getSheetAt(0);
-                convertSheetData(sheet, sheetDataRange.getHeadRowStart(),
-                        sheetDataRange.getDataRowStart(), sheetDataRange.getDataRowEnd(), sheetDataRange.getDataColumnStart(), sheetDataRange.getDataColumnEnd(),
-                        listMap
-                );
-                map.put(sheet.getSheetName(), listMap);
-            }
         }
+        Map<Integer, SheetDataConfig> sheetDataConfigs = config.getSheetDataConfigs();
+        for (Integer sheetNo : sheetDataConfigs.keySet()) {
+            List<Map<String, Object>> listMap = new ArrayList<>();
+            SheetDataConfig sheetDataConfig = sheetDataConfigs.get(sheetNo);
+            SheetDataRange sheetDataRange = sheetDataConfig.getSheetDataRange();
+            if (sheetDataRange == null) {
+                sheetDataRange = config.getDefaultDataRange();
+            }
+            Sheet sheet = workbook.getSheetAt(0);
+            convertSheetData(sheet, sheetDataRange.getHeadRowStart(),
+                    sheetDataRange.getDataRowStart(), sheetDataRange.getDataRowEnd(), sheetDataRange.getDataColumnStart(), sheetDataRange.getDataColumnEnd(),
+                    listMap
+            );
+            map.put(sheet.getSheetName(), listMap);
+        }
+
         return map;
     }
 
@@ -83,14 +86,14 @@ public class Xlsx2MapConverter implements MapConverter<XlsxConvertConfig> {
         // 列标题缓存，key:列下标
         Map<Integer, String> headValueCache = new HashMap<>();
         // 最小的有效函数
-        int minRowIndex = Math.min(headRowStart, dataRowStart);
+        int rowStartNum = Math.min(headRowStart, dataRowStart);
         // 缓存跨行夸列的信息，key：坐标(x,y)
         Map<String, Object> cellMergedValueCache = new HashMap<>();
         // 提取数据
         row:
-        for (Row row : sheet) {
-            int rowNum = row.getRowNum();
-            if (rowNum < minRowIndex) {
+        for (int rowNum = 0; rowNum <= sheet.getLastRowNum(); rowNum++) {
+            Row row = sheet.getRow(rowNum);
+            if (rowNum < rowStartNum) {
                 continue;
             }
             // 匹配列标题
@@ -101,7 +104,8 @@ public class Xlsx2MapConverter implements MapConverter<XlsxConvertConfig> {
                 } else {
                     lastCellNum = dataColumnEnd;
                 }
-                for (Cell cell : row) {
+                for (int cellNum = 0; cellNum < row.getLastCellNum(); cellNum++) {
+                    Cell cell = row.getCell(cellNum);
                     int j = cell.getColumnIndex();
                     if (j >= lastCellNum) {
                         break;
@@ -126,14 +130,14 @@ public class Xlsx2MapConverter implements MapConverter<XlsxConvertConfig> {
 
                     String xy = i + "," + j;
                     Object cellValue;
-                    if(cellMergedValueCache.containsKey(xy)) {
+                    if (cellMergedValueCache.containsKey(xy)) {
                         cellValue = cellMergedValueCache.get(xy);
                     } else {
                         cellValue = getCellValue(cell);
                         CellRangeAddress cellMerged = getCellMerged(sheet, cell);
-                        if(cellMerged != null) {
-                            for (int k = cellMerged.getFirstRow(); k < cellMerged.getLastRow(); k++) {
-                                for (int l = cellMerged.getFirstColumn(); l < cellMerged.getLastColumn(); l++) {
+                        if (cellMerged != null) {
+                            for (int k = cellMerged.getFirstRow(); k <= cellMerged.getLastRow(); k++) {
+                                for (int l = cellMerged.getFirstColumn(); l <= cellMerged.getLastColumn(); l++) {
                                     String xxyy = k + "," + l;
                                     cellMergedValueCache.put(xxyy, cellValue);
                                 }
@@ -184,30 +188,41 @@ public class Xlsx2MapConverter implements MapConverter<XlsxConvertConfig> {
     }
 
     private String getCellString(Cell cell) {
-        CellType cellType = cell.getCellType();
-        if (cellType == CellType.NUMERIC) {
-            if (DateUtil.isCellDateFormatted(cell)) {
-                Date date = cell.getDateCellValue();
-                return new SimpleDateFormat("yyyy-MM-dd").format(date);
-            } else {
-                return cell.getStringCellValue();
-            }
+        Object cellValue = getCellValue(cell);
+        if (cellValue == null) {
+            return null;
+        }
+        if (cellValue instanceof Date) {
+            return new SimpleDateFormat("yyyy-MM-dd").format(cellValue);
         } else {
-            return cell.getStringCellValue();
+            return cellValue.toString();
         }
     }
 
     private Object getCellValue(Cell cell) {
-        CellType cellType = cell.getCellType();
-
-        if (cellType == CellType.NUMERIC) {
-            if (DateUtil.isCellDateFormatted(cell)) {
-                return cell.getDateCellValue();
-            } else {
+        if (cell == null) {
+            return null;
+        }
+        switch (cell.getCellType()) {
+            case STRING:
                 return cell.getStringCellValue();
-            }
-        } else {
-            return cell.getStringCellValue();
+            case NUMERIC:
+                if (DateUtil.isCellDateFormatted(cell)) {
+                    return cell.getDateCellValue();
+                } else {
+                    return cell.getNumericCellValue();
+                }
+            case BOOLEAN:
+                return cell.getBooleanCellValue();
+            case FORMULA:
+                return cell.getCellFormula();
+            case _NONE:
+                return null;
+            case BLANK:
+                return "";
+            default:
+                log.error("无法解析的Cell，坐标: ({}, {})， 类型: {}", cell.getRowIndex(), cell.getColumnIndex(), cell.getCellType());
+                return null;
         }
     }
 

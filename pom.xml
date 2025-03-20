@@ -17,12 +17,10 @@
         <maven.compiler.target>8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <poi.version>5.2.3</poi.version>
+        <poi.version>5.4.0</poi.version>
         <monitorjbl.version>2.2.0</monitorjbl.version>
+        <log4j.version>2.24.3</log4j.version>
         <slf4j.version>1.7.36</slf4j.version>
-        <log4j-to-slf4j.version>2.12.1</log4j-to-slf4j.version>
-        <jul-to-slf4j.version>1.7.28</jul-to-slf4j.version>
-        <log4j.version>2.17.2</log4j.version>
         <junit.version>4.13.2</junit.version>
         <jackson.version>2.17.2</jackson.version>
 
@@ -43,21 +41,40 @@
 <!--            <artifactId>xlsx-streamer</artifactId>-->
 <!--            <version>${monitorjbl.version}</version>-->
 <!--        </dependency>-->
-        <!-- 处理 .xls 文件 -->
+<!--        <dependency>-->
+<!--            <groupId>org.apache.poi</groupId>-->
+<!--            <artifactId>poi</artifactId>-->
+<!--            <version>${poi.version}</version>-->
+<!--        </dependency>-->
+        <!-- https://mvnrepository.com/artifact/org.apache.poi/poi -->
         <dependency>
             <groupId>org.apache.poi</groupId>
             <artifactId>poi</artifactId>
-            <version>${poi.version}</version>
+            <version>5.4.0</version>
         </dependency>
-        <!-- 处理 .xlsx 文件 -->
         <dependency>
             <groupId>org.apache.poi</groupId>
             <artifactId>poi-ooxml</artifactId>
             <version>${poi.version}</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>commons-io</artifactId>
+                    <groupId>commons-io</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>log4j-api</artifactId>
+                    <groupId>org.apache.logging.log4j</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
+            <version>${slf4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>jul-to-slf4j</artifactId>
             <version>${slf4j.version}</version>
         </dependency>
         <dependency>
@@ -87,12 +104,7 @@
             <version>${log4j.version}</version>
             <scope>provided</scope>
         </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>jul-to-slf4j</artifactId>
-            <version>${jul-to-slf4j.version}</version>
-            <scope>provided</scope>
-        </dependency>
+
 
         <dependency>
             <groupId>junit</groupId>

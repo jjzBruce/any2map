@@ -6,7 +6,6 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -19,7 +18,7 @@ public class Xlsx2MapConverterTest {
 
     @Test
     public void test() {
-        try (InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream("test2.xlsx")) {
+        try (InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream("test.xlsx")) {
             Xlsx2MapConverter x2m = new Xlsx2MapConverter();
             Map<String, Object> listMap = x2m.toMap(is);
             Assert.assertTrue(listMap.isEmpty());
@@ -31,7 +30,7 @@ public class Xlsx2MapConverterTest {
     @Test
     public void test2() {
         ObjectMapper objectMapper = new ObjectMapper();
-        try (InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream("test2.xlsx")) {
+        try (InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream("test.xlsx")) {
             Xlsx2MapConverter x2m2 = new Xlsx2MapConverter();
             XlsxConvertConfig config2 = new XlsxConvertConfig();
             SheetDataConfig sheetDataConfig = new SheetDataConfig();

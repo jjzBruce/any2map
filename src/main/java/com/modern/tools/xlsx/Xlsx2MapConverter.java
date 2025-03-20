@@ -1,11 +1,8 @@
 package com.modern.tools.xlsx;
 
 import com.modern.tools.MapConverter;
-import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import org.apache.poi.ss.formula.eval.EvaluationException;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,23 +44,42 @@ public class Xlsx2MapConverter implements MapConverter<XlsxConvertConfig> {
      */
     @Override
     public Map<String, Object> toMap(Object source) {
+        long start = System.currentTimeMillis();
         InputStream is = null;
         if (source instanceof InputStream) {
             is = (InputStream) source;
         }
         Map<String, Object> map = new LinkedHashMap<>();
         Workbook workbook;
+//        try {
+//            workbook = new XSSFWorkbook(is);
+//        } catch (Throwable e) {
+//            try {
+//                workbook = new HSSFWorkbook(is);
+//            } catch (Throwable e1) {
+//                throw new IllegalArgumentException("不支持的文件格式");
+//            }
+//        }
+
+        long create;
         try {
-            workbook = new XSSFWorkbook(is);
-        } catch (Throwable e) {
-            try {
-                workbook = new HSSFWorkbook(is);
-            } catch (Throwable e1) {
-                throw new IllegalArgumentException("不支持的文件格式");
+            workbook = WorkbookFactory.create(is);
+            create = System.currentTimeMillis();
+            if (log.isDebugEnabled()) {
+                log.debug("创建Workbook耗时: {}", create - start);
             }
+        } catch (Throwable e) {
+            throw new IllegalArgumentException("不支持的文件格式");
         }
+
         FormulaEvaluator evaluator = workbook.getCreationHelper().createFormulaEvaluator();
         Map<Integer, SheetDataConfig> sheetDataConfigs = config.getSheetDataConfigs();
+
+        long prepare = System.currentTimeMillis();
+        if (log.isDebugEnabled()) {
+            log.debug("输出Map准备阶段耗时: {}", prepare - create);
+        }
+
         for (Integer sheetNo : sheetDataConfigs.keySet()) {
             List<Map<String, Object>> listMap = new ArrayList<>();
             SheetDataConfig sheetDataConfig = sheetDataConfigs.get(sheetNo);
@@ -79,6 +95,9 @@ public class Xlsx2MapConverter implements MapConverter<XlsxConvertConfig> {
             map.put(sheet.getSheetName(), listMap);
         }
 
+        if (log.isDebugEnabled()) {
+            log.debug("输出Map数据耗时: {}", System.currentTimeMillis() - prepare);
+        }
         return map;
     }
 
@@ -163,7 +182,9 @@ public class Xlsx2MapConverter implements MapConverter<XlsxConvertConfig> {
                 }
             }
         }
-        log.info("处理sheet耗时：{}", System.currentTimeMillis() - start);
+        if (log.isDebugEnabled()) {
+            log.debug("处理sheet[{}] 耗时：{}", sheet.getSheetName(), System.currentTimeMillis() - start);
+        }
     }
 
     /**

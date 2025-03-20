@@ -69,4 +69,25 @@ public class Xlsx2MapConverterTest {
         }
     }
 
+    @Test
+    public void test2Big() {
+        ObjectMapper objectMapper = new ObjectMapper();
+        try (InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream("test-big.xlsx")) {
+            Xlsx2MapConverter x2m2 = new Xlsx2MapConverter();
+            XlsxConvertConfig config2 = new XlsxConvertConfig();
+            SheetDataConfig sheetDataConfig = new SheetDataConfig();
+            config2.addSheetDataConfig(sheetDataConfig);
+            x2m2.setConvertConfig(config2);
+            String configJson = objectMapper.writeValueAsString(x2m2.getConfig());
+            System.out.println("===== 配置 =====");
+            System.out.println(configJson);
+            System.out.println("===== 配置 =====");
+            Map<String, Object> map = x2m2.toMap(is);
+            String json = objectMapper.writeValueAsString(map);
+            System.out.println(json);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 }

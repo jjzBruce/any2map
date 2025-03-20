@@ -2,12 +2,14 @@ package com.modern.tools.xlsx;
 
 import com.modern.tools.MapConverter;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.formula.eval.EvaluationException;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.function.BiPredicate;
@@ -60,6 +62,7 @@ public class Xlsx2MapConverter implements MapConverter<XlsxConvertConfig> {
                 throw new IllegalArgumentException("不支持的文件格式");
             }
         }
+        FormulaEvaluator evaluator = workbook.getCreationHelper().createFormulaEvaluator();
         Map<Integer, SheetDataConfig> sheetDataConfigs = config.getSheetDataConfigs();
         for (Integer sheetNo : sheetDataConfigs.keySet()) {
             List<Map<String, Object>> listMap = new ArrayList<>();
@@ -69,7 +72,7 @@ public class Xlsx2MapConverter implements MapConverter<XlsxConvertConfig> {
                 sheetDataRange = config.getDefaultDataRange();
             }
             Sheet sheet = workbook.getSheetAt(0);
-            convertSheetData(sheet, sheetDataRange.getHeadRowStart(),
+            convertSheetData(sheet, evaluator, sheetDataRange.getHeadRowStart(),
                     sheetDataRange.getDataRowStart(), sheetDataRange.getDataRowEnd(), sheetDataRange.getDataColumnStart(), sheetDataRange.getDataColumnEnd(),
                     listMap
             );
@@ -79,7 +82,7 @@ public class Xlsx2MapConverter implements MapConverter<XlsxConvertConfig> {
         return map;
     }
 
-    public void convertSheetData(Sheet sheet, Integer headRowStart,
+    public void convertSheetData(Sheet sheet, FormulaEvaluator evaluator, Integer headRowStart,
                                  Integer dataRowStart, Integer dataRowEnd, Integer dataColumnStart, Integer dataColumnEnd,
                                  List<Map<String, Object>> mapList, BiPredicate<Object, Object>... skipRowTest) {
         long start = System.currentTimeMillis();
@@ -111,7 +114,7 @@ public class Xlsx2MapConverter implements MapConverter<XlsxConvertConfig> {
                         break;
                     }
                     if (j >= dataColumnStart) {
-                        setHeadTitle(j, getCellString(cell), headValueCache);
+                        setHeadTitle(j, getCellString(evaluator, cell), headValueCache);
                     }
                 }
                 continue;
@@ -133,7 +136,7 @@ public class Xlsx2MapConverter implements MapConverter<XlsxConvertConfig> {
                     if (cellMergedValueCache.containsKey(xy)) {
                         cellValue = cellMergedValueCache.get(xy);
                     } else {
-                        cellValue = getCellValue(cell);
+                        cellValue = getCellValue(evaluator, cell);
                         CellRangeAddress cellMerged = getCellMerged(sheet, cell);
                         if (cellMerged != null) {
                             for (int k = cellMerged.getFirstRow(); k <= cellMerged.getLastRow(); k++) {
@@ -187,8 +190,8 @@ public class Xlsx2MapConverter implements MapConverter<XlsxConvertConfig> {
         }
     }
 
-    private String getCellString(Cell cell) {
-        Object cellValue = getCellValue(cell);
+    private String getCellString(FormulaEvaluator evaluator, Cell cell) {
+        Object cellValue = getCellValue(evaluator, cell);
         if (cellValue == null) {
             return null;
         }
@@ -199,7 +202,7 @@ public class Xlsx2MapConverter implements MapConverter<XlsxConvertConfig> {
         }
     }
 
-    private Object getCellValue(Cell cell) {
+    private Object getCellValue(FormulaEvaluator evaluator, Cell cell) {
         if (cell == null) {
             return null;
         }
@@ -215,7 +218,18 @@ public class Xlsx2MapConverter implements MapConverter<XlsxConvertConfig> {
             case BOOLEAN:
                 return cell.getBooleanCellValue();
             case FORMULA:
-                return cell.getCellFormula();
+                CellValue evalVal = evaluator.evaluate(cell);
+                switch (evalVal.getCellType()) {
+                    case NUMERIC:
+                        return evalVal.getNumberValue();
+                    case STRING:
+                        return evalVal.getStringValue();
+                    case BOOLEAN:
+                        return evalVal.getBooleanValue();
+                    default:
+                        return null;
+                }
+//                return cell.getStringCellValue();
             case _NONE:
                 return null;
             case BLANK:

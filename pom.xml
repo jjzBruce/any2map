@@ -24,6 +24,7 @@
         <junit.version>4.13.2</junit.version>
         <jackson.version>2.17.2</jackson.version>
         <disruptor.version>3.4.4</disruptor.version>
+        <xerces.version>2.12.2</xerces.version>
 
         <lombok.version>1.18.26</lombok.version>
         <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
@@ -56,6 +57,11 @@
                     <groupId>org.apache.logging.log4j</groupId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.xerces</groupId>
+            <artifactId>org.apache.xerces</artifactId>
+            <version>${xerces.version}</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -107,6 +113,14 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <repositories>
+        <repository>
+            <id>clazzes-repository</id>
+            <name>Clazzes Repository</name>
+            <url>https://maven.clazzes.org/</url>
+        </repository>
+    </repositories>
 
     <build>
         <plugins>

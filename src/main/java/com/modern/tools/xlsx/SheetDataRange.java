@@ -9,12 +9,13 @@ package com.modern.tools.xlsx;
 public class SheetDataRange {
 
     private Integer headRowStart = 0;
-    private Integer headRowEnd;
 
     private Integer dataRowStart = 1;
-    private Integer dataRowEnd;
+    private Integer headRowEnd = dataRowStart;
+
+    private Integer dataRowEnd = Integer.MAX_VALUE;
     private Integer dataColumnStart = 0;
-    private Integer dataColumnEnd;
+    private Integer dataColumnEnd = Integer.MAX_VALUE;
 
     public Integer getDataRowStart() {
         return dataRowStart;

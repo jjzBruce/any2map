@@ -1,6 +1,5 @@
 package com.modern.tools.xlsx;
 
-import com.modern.tools.MapConverter;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.slf4j.Logger;
@@ -17,25 +16,8 @@ import java.util.function.BiPredicate;
  * @author <a href="mailto:brucezhang_jjz@163.com">zhangj</a>
  * @since 1.0.0
  */
-public class Xlsx2MapConverter implements MapConverter<XlsxConvertConfig> {
-
+public class Xlsx2MapConverter extends AbstractExcelMapConverter {
     private Logger log = LoggerFactory.getLogger(Xlsx2MapConverter.class);
-
-    private XlsxConvertConfig config = new XlsxConvertConfig();
-
-    public XlsxConvertConfig getConfig() {
-        return config;
-    }
-
-    /**
-     * 转换设置
-     *
-     * @param config 配置
-     */
-    @Override
-    public void setConvertConfig(XlsxConvertConfig config) {
-        this.config = config;
-    }
 
     /**
      * 输出目标 Map
@@ -51,16 +33,6 @@ public class Xlsx2MapConverter implements MapConverter<XlsxConvertConfig> {
         }
         Map<String, Object> map = new LinkedHashMap<>();
         Workbook workbook;
-//        try {
-//            workbook = new XSSFWorkbook(is);
-//        } catch (Throwable e) {
-//            try {
-//                workbook = new HSSFWorkbook(is);
-//            } catch (Throwable e1) {
-//                throw new IllegalArgumentException("不支持的文件格式");
-//            }
-//        }
-
         long create;
         try {
             workbook = WorkbookFactory.create(is);
@@ -87,8 +59,9 @@ public class Xlsx2MapConverter implements MapConverter<XlsxConvertConfig> {
             if (sheetDataRange == null) {
                 sheetDataRange = config.getDefaultDataRange();
             }
-            Sheet sheet = workbook.getSheetAt(0);
-            convertSheetData(sheet, evaluator, sheetDataRange.getHeadRowStart(),
+            Sheet sheet = workbook.getSheetAt(sheetNo);
+            convertSheetData(sheet, sheetDataRange, evaluator,
+                    sheetDataRange.getHeadRowStart(),
                     sheetDataRange.getDataRowStart(), sheetDataRange.getDataRowEnd(), sheetDataRange.getDataColumnStart(), sheetDataRange.getDataColumnEnd(),
                     listMap
             );
@@ -101,7 +74,7 @@ public class Xlsx2MapConverter implements MapConverter<XlsxConvertConfig> {
         return map;
     }
 
-    public void convertSheetData(Sheet sheet, FormulaEvaluator evaluator, Integer headRowStart,
+    public void convertSheetData(Sheet sheet, SheetDataRange sheetDataRange, FormulaEvaluator evaluator, Integer headRowStart,
                                  Integer dataRowStart, Integer dataRowEnd, Integer dataColumnStart, Integer dataColumnEnd,
                                  List<Map<String, Object>> mapList, BiPredicate<Object, Object>... skipRowTest) {
         long start = System.currentTimeMillis();
@@ -111,6 +84,7 @@ public class Xlsx2MapConverter implements MapConverter<XlsxConvertConfig> {
         int rowStartNum = Math.min(headRowStart, dataRowStart);
         // 缓存跨行夸列的信息，key：坐标(x,y)
         Map<String, Object> cellMergedValueCache = new HashMap<>();
+
         // 提取数据
         row:
         for (int rowNum = 0; rowNum <= sheet.getLastRowNum(); rowNum++) {
@@ -118,56 +92,31 @@ public class Xlsx2MapConverter implements MapConverter<XlsxConvertConfig> {
             if (rowNum < rowStartNum) {
                 continue;
             }
+            // 最后一个列下标（不包含）
+            int maxCellNum = Math.min(row.getLastCellNum(), sheetDataRange.getDataColumnEnd());
             // 匹配列标题
             if (headRowStart == rowNum) {
-                Integer lastCellNum;
-                if (dataColumnEnd == null) {
-                    lastCellNum = Short.valueOf(row.getLastCellNum()).intValue();
-                } else {
-                    lastCellNum = dataColumnEnd;
+                for (int colNum = 0; colNum < maxCellNum; colNum++) {
+                    Cell cell = row.getCell(colNum);
+                    fillData(sheetDataRange, rowNum, colNum, getCellString(evaluator, cell),
+                            null, null);
                 }
-                for (int cellNum = 0; cellNum < row.getLastCellNum(); cellNum++) {
-                    Cell cell = row.getCell(cellNum);
-                    int j = cell.getColumnIndex();
-                    if (j >= lastCellNum) {
-                        break;
-                    }
-                    if (j >= dataColumnStart) {
-                        setHeadTitle(j, getCellString(evaluator, cell), headValueCache);
-                    }
-                }
-                continue;
             }
-            if (dataRowEnd != null && row.getRowNum() >= dataRowEnd) {
-                break;
-            }
-            if (row.getRowNum() >= dataRowStart) {
+
+            else if (row.getRowNum() >= dataRowStart) {
                 Map<String, Object> map = new LinkedHashMap<>();
                 //遍历所有的列
-                for (Cell cell : row) {
-                    int i = cell.getRowIndex(), j = cell.getColumnIndex();
-                    if (j < dataColumnStart || (j - dataColumnStart) >= headValueCache.size()) {
-                        continue;
-                    }
-
-                    String xy = i + "," + j;
+                for (int colNum = 0; colNum < maxCellNum; colNum++) {
+                    Cell cell = row.getCell(colNum);
+                    String xy = rowNum + "," + colNum;
                     Object cellValue;
                     if (cellMergedValueCache.containsKey(xy)) {
                         cellValue = cellMergedValueCache.get(xy);
                     } else {
                         cellValue = getCellValue(evaluator, cell);
-                        CellRangeAddress cellMerged = getCellMerged(sheet, cell);
-                        if (cellMerged != null) {
-                            for (int k = cellMerged.getFirstRow(); k <= cellMerged.getLastRow(); k++) {
-                                for (int l = cellMerged.getFirstColumn(); l <= cellMerged.getLastColumn(); l++) {
-                                    String xxyy = k + "," + l;
-                                    cellMergedValueCache.put(xxyy, cellValue);
-                                }
-                            }
-                        }
                     }
-                    String head = headValueCache.get(j);
-                    // 不处理的情况
+
+                    String head = headValueCache.get(colNum);
                     if (skipRowTest != null) {
                         for (BiPredicate<Object, Object> test : skipRowTest) {
                             if (test.test(head, cellValue)) {
@@ -175,7 +124,19 @@ public class Xlsx2MapConverter implements MapConverter<XlsxConvertConfig> {
                             }
                         }
                     }
-                    map.put(head, cellValue);
+
+                    fillData(sheetDataRange, rowNum, colNum, cellValue,
+                            map, cv -> {
+                                CellRangeAddress cellMerged = getCellMerged(sheet, cell);
+                                if (cellMerged != null) {
+                                    for (int k = cellMerged.getFirstRow(); k <= cellMerged.getLastRow(); k++) {
+                                        for (int l = cellMerged.getFirstColumn(); l <= cellMerged.getLastColumn(); l++) {
+                                            String xxyy = k + "," + l;
+                                            cellMergedValueCache.put(xxyy, cv);
+                                        }
+                                    }
+                                }
+                            });
                 }
                 if (map.size() >= headValueCache.size() - 1) {
                     mapList.add(map);
@@ -184,30 +145,6 @@ public class Xlsx2MapConverter implements MapConverter<XlsxConvertConfig> {
         }
         if (log.isDebugEnabled()) {
             log.debug("处理sheet[{}] 耗时：{}", sheet.getSheetName(), System.currentTimeMillis() - start);
-        }
-    }
-
-    /**
-     * 维护标题缓存（需要按照顺序访问excel数据次方法才能有效）
-     *
-     * @param headValueCache 标题缓存，key: 列下标
-     */
-    private void setHeadTitle(int columnIndex, String cellValue, Map<Integer, String> headValueCache) {
-        if (cellValue == null) {
-            return;
-        }
-        headValueCache.put(columnIndex, cellValue);
-        // 维护扩列标题，一般 [1, 1]: 标题1，[1, 4]: 标题2；那么[1, 2], [1, 3] 的标题为标题1
-        int jj = columnIndex - 1;
-        List<Integer> needs = new LinkedList<>();
-        while (!headValueCache.containsKey(jj) && jj >= 0) {
-            needs.add(jj--);
-        }
-        if (!needs.isEmpty()) {
-            String addTitle = headValueCache.get(jj);
-            if (addTitle != null) {
-                needs.forEach(jjj -> headValueCache.put(jjj, addTitle));
-            }
         }
     }
 

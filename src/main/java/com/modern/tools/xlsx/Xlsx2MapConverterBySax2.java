@@ -5,6 +5,7 @@ import org.apache.poi.ss.util.CellReference;
 import org.apache.poi.util.XMLHelper;
 import org.apache.poi.xssf.eventusermodel.XSSFReader;
 import org.apache.poi.xssf.model.SharedStringsTable;
+import org.apache.poi.xssf.usermodel.XSSFRichTextString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.Attributes;
@@ -14,6 +15,7 @@ import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.DefaultHandler;
 
 import java.io.InputStream;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
@@ -60,6 +62,23 @@ public class Xlsx2MapConverterBySax2 extends AbstractExcelMapConverter {
                     parser.setContentHandler(handler);
                     parser.parse(sheetSource);
                     sheet.close();
+
+                    List<Object[]> listArray = handler.getListArray();
+                    for (int i = 0; i < listArray.size(); i++) {
+                        SheetDataRange sheetDataRange = sheetDataConfig.getSheetDataRange();
+                        if (sheetDataRange == null) {
+                            sheetDataRange = config.getDefaultDataRange();
+                        }
+                        Map<String, Object> lineMap = new LinkedHashMap<>();
+                        Object[] objects = listArray.get(i);
+                        for (int j = 0; j < objects.length; j++) {
+                            fillData(sheetDataRange, i, j, objects[j], lineMap, null);
+                        }
+                        if (!lineMap.isEmpty()) {
+                            mapList.add(lineMap);
+                        }
+                    }
+
                     if (log.isDebugEnabled()) {
                         log.debug("解析Excel Sheet[{}] 耗时: [{}] 数据: {}", sheetName, System.currentTimeMillis() - sheetStart,
                                 handler.getListArray());
@@ -163,6 +182,15 @@ public class Xlsx2MapConverterBySax2 extends AbstractExcelMapConverter {
             }
             if (name.equals("v")) {
                 Object value = lastContents;
+                if(!nextIsString) {
+                    try {
+                        double dateValue = Double.parseDouble(lastContents);
+                        Date date = org.apache.poi.ss.usermodel.DateUtil.getJavaDate(dateValue);
+                        value = new SimpleDateFormat("yyyy-MM-dd").format(date);
+                        log.info("分析 {}: \n{} \n{} \n{}", value, uri, localName, name);
+                    } catch (Throwable ignored) {}
+                }
+
                 // 填充值
                 if (currentRowNum == 0) {
                     firstRowList.add(value);
@@ -175,6 +203,7 @@ public class Xlsx2MapConverterBySax2 extends AbstractExcelMapConverter {
         @Override
         public void characters(char[] ch, int start, int length) {
             lastContents += new String(ch, start, length);
+
         }
     }
 

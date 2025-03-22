@@ -50,7 +50,7 @@ public abstract class AbstractExcelMapConverter implements MapConverter<XlsxConv
     }
 
     protected void fillData(SheetDataRange sheetDataRange, int rowNum, int colNum, Object value,
-                            Map<String, Object> map, Consumer<Object> afterSetMapData) {
+                               Map<String, Object> map, Consumer<Object> afterSetMapData) {
         if (sheetDataRange == null) {
             return;
         }

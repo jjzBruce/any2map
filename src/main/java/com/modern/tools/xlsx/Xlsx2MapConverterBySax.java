@@ -1,7 +1,7 @@
 package com.modern.tools.xlsx;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.poi.openxml4j.opc.OPCPackage;
-import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.ss.util.CellReference;
 import org.apache.poi.util.XMLHelper;
@@ -13,12 +13,10 @@ import org.xml.sax.*;
 import org.xml.sax.helpers.DefaultHandler;
 
 import java.io.InputStream;
-import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.function.BiPredicate;
 
 /**
- * Xlsx To Map
+ * Xlsx To Map，读取两次，第一次获取合并区域信息，第二次整合数据
  * 基于：XSSF and SAX (Event API)
  * 参考：https://poi.apache.org/components/spreadsheet/how-to.html#xssf_sax_api
  *
@@ -37,36 +35,42 @@ public class Xlsx2MapConverterBySax extends AbstractExcelMapConverter {
     public Map<String, Object> toMap(Object source) {
         long start = System.currentTimeMillis();
         Objects.nonNull(source);
-
+        Map<String, Object> map = new LinkedHashMap<>();
         Map<Integer, SheetDataConfig> sheetDataConfigs = config.getSheetDataConfigs();
-
         OPCPackage pkg;
         try {
             pkg = OPCPackage.open(source + "");
-            XSSFReader r = new XSSFReader(pkg);
+            XSSFReader xssfReader = new XSSFReader(pkg);
             // 抓取跨行跨列的信息
-            XMLReader parser1 = XMLHelper.newXMLReader();
+            XMLReader mergeParser = XMLHelper.newXMLReader();
             ScanCellRangeAddressHandler scanCellRangeAddressHandler = new ScanCellRangeAddressHandler();
-            parser1.setContentHandler(scanCellRangeAddressHandler);
+            mergeParser.setContentHandler(scanCellRangeAddressHandler);
 
-            SharedStringsTable sst = (SharedStringsTable) r.getSharedStringsTable();
+            SharedStringsTable sst = (SharedStringsTable) xssfReader.getSharedStringsTable();
 
-            Iterator<InputStream> sheets = r.getSheetsData();
+            XSSFReader.SheetIterator sheets = (XSSFReader.SheetIterator) xssfReader.getSheetsData();
             int sheetIndex = 0;
             while (sheets.hasNext()) {
                 InputStream sheet = sheets.next();
-                SheetDataConfig sheetDataConfig = sheetDataConfigs.get(sheetIndex++);
+                String sheetName = sheets.getSheetName();
+                SheetDataConfig sheetDataConfig = sheetDataConfigs.get(sheetIndex);
                 if (sheetDataConfig != null) {
-                    InputSource sheetSource = new InputSource(sheet);
-                    parser1.parse(sheetSource);
-                    System.out.println(scanCellRangeAddressHandler.getMergedRegions());
+                    List<Map<String, Object>> mapList = new ArrayList<>();
+                    map.put(sheetName, mapList);
 
+                    InputSource sheetSource = new InputSource(sheet);
+                    mergeParser.parse(sheetSource);
+                    if (log.isDebugEnabled()) {
+                        log.debug("sheet[{}]合并区域是:[{}]", sheetIndex, scanCellRangeAddressHandler.getMergedRegions());
+                    }
                     XMLReader parser = XMLHelper.newXMLReader();
-                    ContentHandler handler = new SheetHandler(sst, sheetDataConfig.getSheetDataRange(),
+                    SheetHandler handler = new SheetHandler(sst, sheetDataConfig.getSheetDataRange(),
                             scanCellRangeAddressHandler.getMergedRegions());
                     parser.setContentHandler(handler);
+                    parser.parse(sheetSource);
                     sheet.close();
                 }
+                sheetIndex += 1;
             }
 
         } catch (Throwable e) {
@@ -76,57 +80,7 @@ public class Xlsx2MapConverterBySax extends AbstractExcelMapConverter {
         if (log.isDebugEnabled()) {
             log.debug("输出Map数据耗时: {}", System.currentTimeMillis() - start);
         }
-        return null;
-    }
-
-    private String getCellString(FormulaEvaluator evaluator, Cell cell) {
-        Object cellValue = getCellValue(evaluator, cell);
-        if (cellValue == null) {
-            return null;
-        }
-        if (cellValue instanceof Date) {
-            return new SimpleDateFormat("yyyy-MM-dd").format(cellValue);
-        } else {
-            return cellValue.toString();
-        }
-    }
-
-    private Object getCellValue(FormulaEvaluator evaluator, Cell cell) {
-        if (cell == null) {
-            return null;
-        }
-        switch (cell.getCellType()) {
-            case STRING:
-                return cell.getStringCellValue();
-            case NUMERIC:
-                if (DateUtil.isCellDateFormatted(cell)) {
-                    return cell.getDateCellValue();
-                } else {
-                    return cell.getNumericCellValue();
-                }
-            case BOOLEAN:
-                return cell.getBooleanCellValue();
-            case FORMULA:
-                CellValue evalVal = evaluator.evaluate(cell);
-                switch (evalVal.getCellType()) {
-                    case NUMERIC:
-                        return evalVal.getNumberValue();
-                    case STRING:
-                        return evalVal.getStringValue();
-                    case BOOLEAN:
-                        return evalVal.getBooleanValue();
-                    default:
-                        return null;
-                }
-//                return cell.getStringCellValue();
-            case _NONE:
-                return null;
-            case BLANK:
-                return "";
-            default:
-                log.error("无法解析的Cell，坐标: ({}, {})， 类型: {}", cell.getRowIndex(), cell.getColumnIndex(), cell.getCellType());
-                return null;
-        }
+        return map;
     }
 
     public class SheetHandler extends DefaultHandler {
@@ -138,15 +92,31 @@ public class Xlsx2MapConverterBySax extends AbstractExcelMapConverter {
         private int currentColNum;
         private String currentCellRef;
         private List<Map<String, Object>> mapList;
-        private final List<CellRangeAddress> mergedRegions;
+        /**
+         * 合并区域的坐标映射到最左上方坐标
+         */
+        private final Map<String, String> mergeMap = new HashMap<>();
+        /**
+         * 记录合并区域左上方对应的值
+         */
+        private final Map<String, Object> mergeValueMap = new HashMap<>();
 
         public SheetHandler(SharedStringsTable sst, SheetDataRange sheetDataRange,
                             List<CellRangeAddress> mergedRegions) {
             this.sst = sst;
             this.sheetDataRange = sheetDataRange;
-            this.mergedRegions = mergedRegions;
-            if (this.mergedRegions == null) {
-                this.mergedRegions = Collections.emptyList();
+            if (CollectionUtils.isNotEmpty(mergedRegions)) {
+                mergedRegions.forEach(cellRangeAddress -> {
+                    String value = cellRangeAddress.getFirstRow() + "," + cellRangeAddress.getFirstColumn();
+                    for (int i = cellRangeAddress.getFirstRow(); i <= cellRangeAddress.getLastRow(); i++) {
+                        for (int j = cellRangeAddress.getFirstColumn(); j <= cellRangeAddress.getLastColumn(); j++) {
+                            mergeMap.put(i + "," + j, value);
+                        }
+                    }
+                });
+                if(log.isDebugEnabled()) {
+                    log.debug("mergeMap: {}", mergeMap);
+                }
             }
             this.mapList = new ArrayList<>();
         }
@@ -191,16 +161,28 @@ public class Xlsx2MapConverterBySax extends AbstractExcelMapConverter {
                 lastContents = sst.getItemAt(idx).getString();
                 nextIsString = false;
             }
-            // v => contents of a cell
-            // Output after we've seen the string contents
-            if (name.equals("v")) {
-                fillData(sheetDataRange, currentRowNum, currentColNum, lastContents, lineMap, null);
-            } else {
-                CellRangeAddress cellRangeAddress = getCellMerged(mergedRegions, currentCellRef);
-                if(cellRangeAddress != null) {
 
+            Object value;
+            String ij = currentRowNum + "," + currentColNum;
+            if (name.equals("v")) {
+                // v => contents of a cell
+                value = lastContents;
+            } else {
+                if (mergeMap.containsKey(ij)) {
+                    // 在合并区域的情况下取值
+                    value = mergeValueMap.get(mergeMap.get(ij));
+                } else {
+                    value = null;
                 }
             }
+
+            fillData(sheetDataRange, currentRowNum, currentColNum, lastContents, lineMap, v -> {
+                if (mergeMap.containsKey(ij) && ij.equals(mergeMap.get(ij))) {
+                    // 表示该值是合并区域的左上方的值
+                    mergeValueMap.put(ij, value);
+                }
+            });
+
             currentRowNum = -1;
             currentColNum = -1;
             currentCellRef = "";

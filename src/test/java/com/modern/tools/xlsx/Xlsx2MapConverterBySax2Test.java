@@ -5,7 +5,6 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 
@@ -15,13 +14,13 @@ import java.util.Map;
  * @author <a href="mailto:brucezhang_jjz@163.com">zhangjun</a>
  * @since 1.0.0
  */
-public class Xlsx2MapConverterBySaxTest {
+public class Xlsx2MapConverterBySax2Test {
 
     @Test
     public void test2() {
         ObjectMapper objectMapper = new ObjectMapper();
         try {
-            Xlsx2MapConverterBySax x2ms = new Xlsx2MapConverterBySax();
+            Xlsx2MapConverterBySax2 x2ms = new Xlsx2MapConverterBySax2();
             XlsxConvertConfig config2 = new XlsxConvertConfig();
             SheetDataConfig sheetDataConfig = new SheetDataConfig();
             config2.addSheetDataConfig(sheetDataConfig);
@@ -62,7 +61,7 @@ public class Xlsx2MapConverterBySaxTest {
     public void test2Big2() {
         ObjectMapper objectMapper = new ObjectMapper();
         try {
-            Xlsx2MapConverterBySax x2ms = new Xlsx2MapConverterBySax();
+            Xlsx2MapConverterBySax2 x2ms = new Xlsx2MapConverterBySax2();
             XlsxConvertConfig config2 = new XlsxConvertConfig();
             SheetDataConfig sheetDataConfig = new SheetDataConfig();
             config2.addSheetDataConfig(sheetDataConfig);

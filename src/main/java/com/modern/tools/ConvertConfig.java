@@ -7,4 +7,7 @@ package com.modern.tools;
  * @since 1.0.0
  */
 public interface ConvertConfig {
+
+    Object getSource();
+
 }

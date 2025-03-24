@@ -1,4 +1,4 @@
-package com.modern.tools.xlsx;
+package com.modern.tools.excel;
 
 import com.modern.tools.MapConverter;
 
@@ -14,43 +14,37 @@ import java.util.function.Consumer;
  * @author <a href="mailto:brucezhang_jjz@163.com">zhangjun</a>
  * @since 1.0.0
  */
-public abstract class AbstractExcelMapConverter implements MapConverter<XlsxConvertConfig> {
+public abstract class AbstractExcelMapConverter implements MapConverter<ExcelConvertConfig> {
 
-    protected XlsxConvertConfig config = new XlsxConvertConfig();
+    /**
+     * 配置
+     */
+    protected ExcelConvertConfig config;
 
     /**
      * 列标题缓存，key:列下标
+     * TODO 需要实现多层下标的情况
      */
     protected Map<Integer, String> headValueCache = new HashMap<>();
 
-    public XlsxConvertConfig getConfig() {
-        return config;
-    }
-
-    /**
-     * 转换设置
-     */
-    @Override
-    public void setConvertConfig(XlsxConvertConfig config) {
+    protected AbstractExcelMapConverter(ExcelConvertConfig config) {
         this.config = config;
     }
 
-    protected boolean inDataRange(SheetDataRange sheetDataRange, int rowNum, int colNum) {
-        if (sheetDataRange == null) {
-            return false;
-        }
-        if (rowNum >= sheetDataRange.getHeadRowStart() && rowNum < sheetDataRange.getHeadRowEnd()) {
-            return true;
-        }
-        if (rowNum >= sheetDataRange.getDataRowStart() && rowNum < sheetDataRange.getDataRowEnd()
-                && colNum >= sheetDataRange.getDataColumnStart() && colNum < sheetDataRange.getDataColumnEnd()) {
-            return true;
-        }
-        return false;
+    public ExcelConvertConfig getConfig() {
+        return config;
     }
 
+//    /**
+//     * 转换设置
+//     */
+//    @Override
+//    public void setConvertConfig(ExcelConvertConfig config) {
+//        this.config = config;
+//    }
+
     protected void fillData(SheetDataRange sheetDataRange, int rowNum, int colNum, Object value,
-                               Map<String, Object> map, Consumer<Object> afterSetMapData) {
+                            Map<String, Object> map, Consumer<Object> afterSetMapData) {
         if (sheetDataRange == null) {
             return;
         }
@@ -97,5 +91,8 @@ public abstract class AbstractExcelMapConverter implements MapConverter<XlsxConv
         }
     }
 
-
+    @Override
+    public ExcelConvertConfig getConvertConfig() {
+        return config;
+    }
 }

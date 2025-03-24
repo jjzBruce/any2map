@@ -1,6 +1,5 @@
-package com.modern.tools.xlsx;
+package com.modern.tools.excel;
 
-import com.fasterxml.jackson.databind.util.JSONPObject;
 import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.ss.util.CellReference;
 import org.apache.poi.util.XMLHelper;
@@ -26,16 +25,21 @@ import java.util.*;
  * @author <a href="mailto:brucezhang_jjz@163.com">zhangj</a>
  * @since 1.0.0
  */
-public class Xlsx2MapConverterBySax2 extends AbstractExcelMapConverter {
-    private Logger log = LoggerFactory.getLogger(Xlsx2MapConverterBySax2.class);
+public class Excel2MapConverterBySax extends AbstractExcelMapConverter {
+    private Logger log = LoggerFactory.getLogger(Excel2MapConverterBySax.class);
 
-    /**
-     * 输出目标 Map
-     *
-     * @return Map
-     */
+    public Excel2MapConverterBySax(ExcelConvertConfig config) {
+        super(config);
+    }
+
     @Override
-    public Map<String, Object> toMap(Object source) {
+    public Map<String, Object> toMap() {
+        Object source = config.getSource();
+        Objects.nonNull(source);
+        return toMap1(source);
+    }
+
+    private Map<String, Object> toMap1(Object source) {
         long start = System.currentTimeMillis();
         Objects.nonNull(source);
         Map<String, Object> map = new LinkedHashMap<>();

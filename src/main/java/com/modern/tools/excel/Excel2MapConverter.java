@@ -1,10 +1,12 @@
-package com.modern.tools.xlsx;
+package com.modern.tools.excel;
 
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -16,20 +18,27 @@ import java.util.function.BiPredicate;
  * @author <a href="mailto:brucezhang_jjz@163.com">zhangj</a>
  * @since 1.0.0
  */
-public class Xlsx2MapConverter extends AbstractExcelMapConverter {
-    private Logger log = LoggerFactory.getLogger(Xlsx2MapConverter.class);
+public class Excel2MapConverter extends AbstractExcelMapConverter {
+    private Logger log = LoggerFactory.getLogger(Excel2MapConverter.class);
 
-    /**
-     * 输出目标 Map
-     *
-     * @return Map
-     */
+    public Excel2MapConverter(ExcelConvertConfig config) {
+        super(config);
+    }
+
     @Override
-    public Map<String, Object> toMap(Object source) {
+    public Map<String, Object> toMap() {
+        Object source = config.getSource();
+        Objects.nonNull(source);
         long start = System.currentTimeMillis();
-        InputStream is = null;
-        if (source instanceof InputStream) {
-            is = (InputStream) source;
+        InputStream is;
+        if (source instanceof String) {
+            try {
+                is = new FileInputStream(String.valueOf(source));
+            } catch (FileNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            throw new UnsupportedOperationException("需要传入文件路径");
         }
         Map<String, Object> map = new LinkedHashMap<>();
         Workbook workbook;

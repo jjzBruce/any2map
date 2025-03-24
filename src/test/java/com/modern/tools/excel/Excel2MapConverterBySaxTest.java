@@ -1,11 +1,13 @@
-package com.modern.tools.xlsx;
+package com.modern.tools.excel;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.modern.tools.Any2Map;
+import com.modern.tools.MapConverter;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 
@@ -15,28 +17,33 @@ import java.util.Map;
  * @author <a href="mailto:brucezhang_jjz@163.com">zhangjun</a>
  * @since 1.0.0
  */
-public class Xlsx2MapConverterBySaxTest {
+public class Excel2MapConverterBySaxTest {
 
     @Test
     public void test2() {
         ObjectMapper objectMapper = new ObjectMapper();
         try {
-            Xlsx2MapConverterBySax x2ms = new Xlsx2MapConverterBySax();
-            XlsxConvertConfig config2 = new XlsxConvertConfig();
+            String separator = File.separator;
+            String filePath = System.getProperty("user.dir") + separator + "src" + separator + "test" + separator
+                    + "resources" + separator + "test.xlsx";
+            ExcelConvertConfig config2 = new ExcelConvertConfig(filePath);
             SheetDataConfig sheetDataConfig = new SheetDataConfig();
+            ExcelDateTypeConfig edtc = new ExcelDateTypeConfig(0, 5);
+            sheetDataConfig.addExcelDateTypeConfig(edtc);
             config2.addSheetDataConfig(sheetDataConfig);
-            x2ms.setConvertConfig(config2);
-            String configJson = objectMapper.writeValueAsString(x2ms.getConfig());
+            MapConverter x2ms = Any2Map.createMapConverter(config2);
+            String configJson = objectMapper.writeValueAsString(x2ms.getConvertConfig());
             System.out.println("===== 配置 =====");
             System.out.println(configJson);
             System.out.println("===== 配置 =====");
-            Map<String, Object> map = x2ms.toMap("D:\\code\\open\\any2map\\src\\test\\resources\\test.xlsx");
+
+            Map<String, Object> map = x2ms.toMap();
             String json = objectMapper.writeValueAsString(map);
             System.out.println(json);
 
             Assert.assertTrue(map.containsKey("S1"));
             List<Map<String, Object>> list = (List<Map<String, Object>>) map.get("S1");
-            Assert.assertEquals(2, list.size());
+            Assert.assertEquals(3, list.size());
             Map<String, Object> m1 = list.get(0);
             Assert.assertEquals("跨列", m1.get("A"));
             Assert.assertEquals("跨列", m1.get("B"));
@@ -53,6 +60,9 @@ public class Xlsx2MapConverterBySaxTest {
             Assert.assertEquals("跨行跨列", m2.get("E"));
             Assert.assertEquals("跨行跨列", m2.get("2000-01-11"));
 
+            Map<String, Object> m3 = list.get(2);
+            Assert.assertEquals(true, m3.get("A"));
+            Assert.assertEquals(false, m3.get("B"));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -60,18 +70,20 @@ public class Xlsx2MapConverterBySaxTest {
 
     @Test
     public void test2Big2() {
+        String separator = File.separator;
+        String filePath = System.getProperty("user.dir") + separator + "src" + separator + "test" + separator
+                + "resources" + separator + "test-big.xlsx";
         ObjectMapper objectMapper = new ObjectMapper();
         try {
-            Xlsx2MapConverterBySax x2ms = new Xlsx2MapConverterBySax();
-            XlsxConvertConfig config2 = new XlsxConvertConfig();
+            ExcelConvertConfig config2 = new ExcelConvertConfig(filePath);
             SheetDataConfig sheetDataConfig = new SheetDataConfig();
             config2.addSheetDataConfig(sheetDataConfig);
-            x2ms.setConvertConfig(config2);
-            String configJson = objectMapper.writeValueAsString(x2ms.getConfig());
+            MapConverter x2ms = Any2Map.createMapConverter(config2);
+            String configJson = objectMapper.writeValueAsString(x2ms.getConvertConfig());
             System.out.println("===== 配置 =====");
             System.out.println(configJson);
             System.out.println("===== 配置 =====");
-            Map<String, Object> map = x2ms.toMap("D:\\code\\open\\any2map\\src\\test\\resources\\test-big.xlsx");
+            Map<String, Object> map = x2ms.toMap();
             String json = objectMapper.writeValueAsString(map);
             System.out.println(json);
         } catch (IOException e) {

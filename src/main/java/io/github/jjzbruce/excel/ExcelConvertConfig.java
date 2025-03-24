@@ -1,6 +1,6 @@
-package com.modern.tools.excel;
+package io.github.jjzbruce.excel;
 
-import com.modern.tools.ConvertConfig;
+import io.github.jjzbruce.ConvertConfig;
 
 import java.util.*;
 

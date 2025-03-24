@@ -1,4 +1,4 @@
-package com.modern.tools.utils;
+package io.github.jjzbruce.utils;
 
 /**
  * 常用工具集

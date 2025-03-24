@@ -1,4 +1,4 @@
-package com.modern.tools;
+package io.github.jjzbruce;
 
 /**
  * 转换配置

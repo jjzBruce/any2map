@@ -1,7 +1,7 @@
-package com.modern.tools;
+package io.github.jjzbruce;
 
-import com.modern.tools.excel.AbstractExcelMapConverter;
-import com.modern.tools.excel.ExcelConvertConfig;
+import io.github.jjzbruce.excel.AbstractExcelMapConverter;
+import io.github.jjzbruce.excel.ExcelConvertConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

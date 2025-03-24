@@ -1,4 +1,4 @@
-package com.modern.tools;
+package io.github.jjzbruce;
 
 import java.util.Map;
 

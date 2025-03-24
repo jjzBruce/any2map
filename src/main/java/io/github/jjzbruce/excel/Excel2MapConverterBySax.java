@@ -1,4 +1,4 @@
-package com.modern.tools.excel;
+package io.github.jjzbruce.excel;
 
 import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.ss.util.CellReference;

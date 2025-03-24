@@ -1,9 +1,9 @@
-package com.modern.tools.excel;
+package io.github.jjzbruce.excel;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.modern.tools.Any2Map;
-import com.modern.tools.MapConverter;
+import io.github.jjzbruce.Any2Map;
+import io.github.jjzbruce.MapConverter;
 import org.junit.Assert;
 import org.junit.Test;
 

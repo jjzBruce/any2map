@@ -1,6 +1,6 @@
-package com.modern.tools.excel;
+package io.github.jjzbruce.excel;
 
-import com.modern.tools.MapConverter;
+import io.github.jjzbruce.MapConverter;
 
 import java.util.HashMap;
 import java.util.LinkedList;

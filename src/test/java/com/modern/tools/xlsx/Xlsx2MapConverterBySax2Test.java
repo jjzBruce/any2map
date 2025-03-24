@@ -23,19 +23,22 @@ public class Xlsx2MapConverterBySax2Test {
             Xlsx2MapConverterBySax2 x2ms = new Xlsx2MapConverterBySax2();
             XlsxConvertConfig config2 = new XlsxConvertConfig();
             SheetDataConfig sheetDataConfig = new SheetDataConfig();
+            ExcelDateTypeConfig edtc = new ExcelDateTypeConfig(0, 5);
+            sheetDataConfig.addExcelDateTypeConfig(edtc);
             config2.addSheetDataConfig(sheetDataConfig);
             x2ms.setConvertConfig(config2);
             String configJson = objectMapper.writeValueAsString(x2ms.getConfig());
             System.out.println("===== 配置 =====");
             System.out.println(configJson);
             System.out.println("===== 配置 =====");
-            Map<String, Object> map = x2ms.toMap("D:\\code\\open\\any2map\\src\\test\\resources\\test.xlsx");
+
+            Map<String, Object> map = x2ms.toMap("D:\\code\\open\\any2map\\src\\test\\resources\\test2.xlsx");
             String json = objectMapper.writeValueAsString(map);
             System.out.println(json);
 
             Assert.assertTrue(map.containsKey("S1"));
             List<Map<String, Object>> list = (List<Map<String, Object>>) map.get("S1");
-            Assert.assertEquals(2, list.size());
+            Assert.assertEquals(3, list.size());
             Map<String, Object> m1 = list.get(0);
             Assert.assertEquals("跨列", m1.get("A"));
             Assert.assertEquals("跨列", m1.get("B"));
@@ -52,6 +55,9 @@ public class Xlsx2MapConverterBySax2Test {
             Assert.assertEquals("跨行跨列", m2.get("E"));
             Assert.assertEquals("跨行跨列", m2.get("2000-01-11"));
 
+            Map<String, Object> m3 = list.get(2);
+            Assert.assertEquals(true, m3.get("A"));
+            Assert.assertEquals(false, m3.get("B"));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

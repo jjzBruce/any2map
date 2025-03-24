@@ -1,11 +1,11 @@
 package com.modern.tools.xlsx;
 
+import com.fasterxml.jackson.databind.util.JSONPObject;
 import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.ss.util.CellReference;
 import org.apache.poi.util.XMLHelper;
 import org.apache.poi.xssf.eventusermodel.XSSFReader;
 import org.apache.poi.xssf.model.SharedStringsTable;
-import org.apache.poi.xssf.usermodel.XSSFRichTextString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.Attributes;
@@ -58,7 +58,7 @@ public class Xlsx2MapConverterBySax2 extends AbstractExcelMapConverter {
                     List<Map<String, Object>> mapList = new ArrayList<>();
                     map.put(sheetName, mapList);
                     InputSource sheetSource = new InputSource(sheet);
-                    SheetHandler handler = new SheetHandler(sst);
+                    SheetHandler handler = new SheetHandler(sst, sheetDataConfig);
                     parser.setContentHandler(handler);
                     parser.parse(sheetSource);
                     sheet.close();
@@ -99,10 +99,11 @@ public class Xlsx2MapConverterBySax2 extends AbstractExcelMapConverter {
 
     public class SheetHandler extends DefaultHandler {
         private SharedStringsTable sst;
+        private SheetDataConfig sheetDataConfig;
         private String lastContents;
-        private boolean nextIsString;
         private int currentRowNum;
         private int currentColNum;
+        private String cellType;
         private List<Object[]> listArray = new LinkedList<>();
         private List<Object> firstRowList = new LinkedList<>();
         private int maxColNum;
@@ -111,8 +112,9 @@ public class Xlsx2MapConverterBySax2 extends AbstractExcelMapConverter {
             return listArray;
         }
 
-        public SheetHandler(SharedStringsTable sst) {
+        public SheetHandler(SharedStringsTable sst, SheetDataConfig sheetDataConfig) {
             this.sst = sst;
+            this.sheetDataConfig = sheetDataConfig;
         }
 
         @Override
@@ -137,12 +139,8 @@ public class Xlsx2MapConverterBySax2 extends AbstractExcelMapConverter {
                     Object[] line = new Object[maxColNum];
                     listArray.add(line);
                 }
-                String cellType = attributes.getValue("t");
-                if (cellType != null && cellType.equals("s")) {
-                    nextIsString = true;
-                } else {
-                    nextIsString = false;
-                }
+                cellType = attributes.getValue("t");
+                log.debug("({},{}) cellType: {}", currentRowNum, currentColNum, cellType);
             } else if ("mergeCell".equals(name)) {
                 // 处理合并区域取值，取左上值即可
                 String mergeRef = attributes.getValue("ref");
@@ -175,20 +173,59 @@ public class Xlsx2MapConverterBySax2 extends AbstractExcelMapConverter {
 
         @Override
         public void endElement(String uri, String localName, String name) throws SAXException {
-            if (nextIsString) {
-                int idx = Integer.parseInt(lastContents);
-                lastContents = sst.getItemAt(idx).getString();
-                nextIsString = false;
-            }
             if (name.equals("v")) {
                 Object value = lastContents;
-                if(!nextIsString) {
-                    try {
-                        double dateValue = Double.parseDouble(lastContents);
-                        Date date = org.apache.poi.ss.usermodel.DateUtil.getJavaDate(dateValue);
-                        value = new SimpleDateFormat("yyyy-MM-dd").format(date);
-                        log.info("分析 {}: \n{} \n{} \n{}", value, uri, localName, name);
-                    } catch (Throwable ignored) {}
+                if (cellType != null) {
+                    switch (cellType) {
+                        case "b":
+                            // 布尔值。单元格内的 v 标签的值为 0 或 1，分别代表 false 和 true
+                            value = "1".equals(lastContents);
+                            break;
+                        case "n":
+                            // 数字。可能是整数、小数等。
+                            value = Double.valueOf(lastContents);
+                            break;
+                        case "s":
+                            // 共享字符串（Shared String）。
+                            // Excel 会把所有的字符串存储在一个共享字符串表中，每个字符串有一个对应的索引。
+                            // 当 cellType 为 s 时，v 标签的值是共享字符串表的索引，你需要通过这个索引从共享字符串表中获取实际的字符串内容。
+                            int idx = Integer.parseInt(lastContents);
+                            value = sst.getItemAt(idx).getString();
+                            break;
+                        case "str":
+                            // 公式字符串。v 标签的值就是公式计算得到的字符串结果。f 标签是计算公式
+                            value = lastContents;
+                            break;
+                        case "e":
+                            // 错误值。v 标签的值是错误代码
+                            value = lastContents;
+                            break;
+                        case "d":
+                            // 日期。v 标签的值是错误代码
+                            value = lastContents;
+                            break;
+                    }
+                }
+
+                if (!("s").equals(cellType)) {
+                    // 处理自定义的数据类型
+                    ExcelDateTypeConfig excelDataType = sheetDataConfig.getExcelDataType(currentRowNum, currentColNum);
+                    if (excelDataType != null) {
+                        try {
+                            double dateValue = Double.parseDouble(lastContents);
+                            Date date = org.apache.poi.ss.usermodel.DateUtil.getJavaDate(dateValue);
+                            value = new SimpleDateFormat(excelDataType.getDateFormat()).format(date);
+                        } catch (Throwable ignored) {
+                            log.error("数据转为时间错误 ({},{}): {}", currentRowNum, currentColNum, lastContents);
+                        }
+                    } else if(!("b").equals(cellType) && !("d").equals(cellType)) {
+                        // 尝试当成 数字来处理
+                        try {
+                            value = Double.parseDouble(lastContents);
+                        } catch (Throwable ignored) {
+                            log.error("数据转为数字错误 ({},{}): {}", currentRowNum, currentColNum, lastContents);
+                        }
+                    }
                 }
 
                 // 填充值
@@ -203,7 +240,6 @@ public class Xlsx2MapConverterBySax2 extends AbstractExcelMapConverter {
         @Override
         public void characters(char[] ch, int start, int length) {
             lastContents += new String(ch, start, length);
-
         }
     }
 

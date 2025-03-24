@@ -1,5 +1,8 @@
 package com.modern.tools.xlsx;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * SheetDataConfig
  *
@@ -10,6 +13,11 @@ public class SheetDataConfig {
 
     private Integer sheetIndex = 0;
     private SheetDataRange sheetDataRange;
+
+    /**
+     * Excel解析数据类型设置
+     */
+    private List<ExcelDateTypeConfig> excelDateTypeConfigs = new ArrayList<>();
 
     public Integer getSheetIndex() {
         return sheetIndex;
@@ -23,8 +31,20 @@ public class SheetDataConfig {
         return sheetDataRange;
     }
 
-    public void setSheetDataRange(SheetDataRange sheetDataRange) {
-        this.sheetDataRange = sheetDataRange;
+    public void addExcelDateTypeConfig(ExcelDateTypeConfig excelDateTypeConfig) {
+        this.excelDateTypeConfigs.add(excelDateTypeConfig);
+    }
+
+    public ExcelDateTypeConfig getExcelDataType(int row, int col) {
+        if(excelDateTypeConfigs == null) {
+            return null;
+        }
+        for(ExcelDateTypeConfig dateTypeConfig : excelDateTypeConfigs) {
+            if(dateTypeConfig.isInRange(row, col)) {
+                return dateTypeConfig;
+            }
+        }
+        return null;
     }
 
 }

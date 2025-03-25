@@ -98,7 +98,8 @@ Map<String, Object> map = x2ms.toMap();
 
 ### To Do List
 
-- xlsx 和 xls 的区别并需要测试
+- xls 事件读取公式问题
+- 测试事件读取 hssf 和 xssf 的效率
 - Excel 多级Head实现
 - Excel 分组实现
 - Mongo 数据转Map实现

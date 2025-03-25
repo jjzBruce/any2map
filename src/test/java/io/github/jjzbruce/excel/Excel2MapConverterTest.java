@@ -4,12 +4,18 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.jjzbruce.Any2Map;
 import io.github.jjzbruce.MapConverter;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.io.File;
+import java.io.*;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 /**
  * Xlsx2MapConverter
@@ -100,6 +106,48 @@ public class Excel2MapConverterTest {
         Assert.assertEquals(-1288D, m2.get("D"));
         Assert.assertEquals("跨行跨列", m2.get("E"));
         Assert.assertEquals("跨行跨列", m2.get("2000-01-11"));
+    }
+
+
+    @Test
+    public void testReadBigFile() {
+        String separator = File.separator;
+        String filePath = System.getProperty("user.dir") + separator + "src" + separator + "test" + separator
+                + "resources" + separator + "big-test.xlsx";
+        // 产生 1GB 的文件
+        generateBigTestFile(filePath);
+    }
+
+    public void generateBigTestFile(String filePath) {
+        int size = 1024 * 1024 * 1024;
+        Random random = new Random();
+        int rowNum = 0;
+        while (true) {
+            try (Workbook workbook = new SXSSFWorkbook();
+                 RandomAccessFile fileOut = new RandomAccessFile(filePath, "rw")) {
+                Sheet sheet;
+                if(rowNum == 0) {
+                    sheet = workbook.createSheet("LargeSheet");
+                } else {
+                    sheet = workbook.getSheet("largeSheet");
+                }
+
+                int total = rowNum + 100;
+                for (int i = rowNum; i < total; i++) {
+                    Row row = sheet.createRow(i);
+                    for (int colIndex = 0; colIndex < 100; colIndex++) {
+                        Cell cell = row.createCell(colIndex);
+                        cell.setCellValue(random.nextInt());
+                    }
+                }
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                workbook.write(baos);
+                fileOut.write(baos.toByteArray());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
     }
 
 }

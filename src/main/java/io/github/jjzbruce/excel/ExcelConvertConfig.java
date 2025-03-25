@@ -26,7 +26,7 @@ public class ExcelConvertConfig implements ConvertConfig {
      */
     private SheetDataRange defaultDataRange = new SheetDataRange();
 
-    private Class<? extends AbstractExcelMapConverter> delegateImpl = Excel2MapConverterBySax.class;
+    private Class<? extends AbstractExcelMapConverter> delegateImpl = Excel2MapConverterByEvent.class;
 
     public ExcelConvertConfig(Object source) {
         this.source = source;

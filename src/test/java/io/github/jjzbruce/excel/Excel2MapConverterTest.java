@@ -20,22 +20,64 @@ import java.util.Map;
 public class Excel2MapConverterTest {
 
     @Test
-    public void test2() throws JsonProcessingException {
+    public void testXlsxByExcel2MapConverter() throws JsonProcessingException {
         String separator = File.separator;
         String filePath = System.getProperty("user.dir") + separator + "src" + separator + "test" + separator
                 + "resources" + separator + "test.xlsx";
-        ObjectMapper objectMapper = new ObjectMapper();
-        ExcelConvertConfig config2 = new ExcelConvertConfig(filePath,
-                Excel2MapConverter.class);
+        ExcelConvertConfig config2 = new ExcelConvertConfig(filePath, Excel2MapConverter.class);
         SheetDataConfig sheetDataConfig = new SheetDataConfig();
         config2.addSheetDataConfig(sheetDataConfig);
-        MapConverter x2m2 = Any2Map.createMapConverter(config2);
+        MapConverter mc = Any2Map.createMapConverter(config2);
+        doTest(mc);
+    }
 
-        String configJson = objectMapper.writeValueAsString(x2m2.getConvertConfig());
+    @Test
+    public void testXlsByExcel2MapConverter() throws JsonProcessingException {
+        String separator = File.separator;
+        String filePath = System.getProperty("user.dir") + separator + "src" + separator + "test" + separator
+                + "resources" + separator + "test.xls";
+        ExcelConvertConfig config2 = new ExcelConvertConfig(filePath, Excel2MapConverter.class);
+        SheetDataConfig sheetDataConfig = new SheetDataConfig();
+        config2.addSheetDataConfig(sheetDataConfig);
+        MapConverter mc = Any2Map.createMapConverter(config2);
+        doTest(mc);
+    }
+
+    @Test
+    public void testXlsx() throws JsonProcessingException {
+        String separator = File.separator;
+        String filePath = System.getProperty("user.dir") + separator + "src" + separator + "test" + separator
+                + "resources" + separator + "test.xlsx";
+        ExcelConvertConfig config2 = new ExcelConvertConfig(filePath);
+        SheetDataConfig sheetDataConfig = new SheetDataConfig();
+        ExcelDateTypeConfig edtc = new ExcelDateTypeConfig(0, 5);
+        sheetDataConfig.addExcelDateTypeConfig(edtc);
+        config2.addSheetDataConfig(sheetDataConfig);
+        MapConverter mc = Any2Map.createMapConverter(config2);
+        doTest(mc);
+    }
+
+    @Test
+    public void testXls() throws JsonProcessingException {
+        String separator = File.separator;
+        String filePath = System.getProperty("user.dir") + separator + "src" + separator + "test" + separator
+                + "resources" + separator + "test.xls";
+        ExcelConvertConfig config2 = new ExcelConvertConfig(filePath);
+        SheetDataConfig sheetDataConfig = new SheetDataConfig();
+        ExcelDateTypeConfig edtc = new ExcelDateTypeConfig(0, 5);
+        sheetDataConfig.addExcelDateTypeConfig(edtc);
+        config2.addSheetDataConfig(sheetDataConfig);
+        MapConverter mc = Any2Map.createMapConverter(config2);
+        doTest(mc);
+    }
+
+    public void doTest(MapConverter mc) throws JsonProcessingException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        String configJson = objectMapper.writeValueAsString(mc.getConvertConfig());
         System.out.println("===== 配置 =====");
         System.out.println(configJson);
         System.out.println("===== 配置 =====");
-        Map<String, Object> map = x2m2.toMap();
+        Map<String, Object> map = mc.toMap();
         String json = objectMapper.writeValueAsString(map);
         System.out.println(json);
 
@@ -46,6 +88,7 @@ public class Excel2MapConverterTest {
         Assert.assertEquals("跨列", m1.get("A"));
         Assert.assertEquals("跨列", m1.get("B"));
         Assert.assertEquals("跨行", m1.get("C"));
+        // TODO HSSF event 模式下 值是 0
         Assert.assertEquals("-", m1.get("D"));
         Assert.assertEquals("跨行跨列", m1.get("E"));
         Assert.assertEquals("跨行跨列", m1.get("2000-01-11"));

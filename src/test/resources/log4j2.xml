@@ -4,9 +4,19 @@
 		<property name="LOG_PATTERN" value="%d %p %c{9.9.9.1}(%L) [%t] %m%n" />
 	</Properties>
 
+	<appenders>
+		<Console name="Console" target="SYSTEM_OUT">
+			<PatternLayout pattern="${LOG_PATTERN}"/>
+		</Console>
+	</appenders>
+
 	<loggers>
-		<logger name="com.modern.tools" level="DEBUG">
+		<logger name="io.github.jjzbruce" level="DEBUG">
+			<appender-ref ref="Console"/>
 		</logger>
+		<root level="INFO">
+			<appender-ref ref="Console"/>
+		</root>
 	</loggers>
 
 </configuration>

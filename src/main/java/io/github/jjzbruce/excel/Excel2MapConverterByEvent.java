@@ -157,8 +157,8 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
                         }
                     }
 
-                    if (log.isDebugEnabled()) {
-                        log.debug("解析Excel Sheet[{}] 耗时: [{}] 数据: {}", sheetName, System.currentTimeMillis() - sheetStart,
+                    if (log.isTraceEnabled()) {
+                        log.trace("解析Excel Sheet[{}] 耗时: [{}] 数据: {}", sheetName, System.currentTimeMillis() - sheetStart,
                                 handler.getListArray());
                     }
                 }
@@ -169,8 +169,8 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
             //TODO 合理
             e.printStackTrace();
         }
-        if (log.isDebugEnabled()) {
-            log.debug("输出Map数据耗时: {}", System.currentTimeMillis() - start);
+        if (log.isTraceEnabled()) {
+            log.trace("输出Map数据耗时: {}", System.currentTimeMillis() - start);
         }
         return map;
     }
@@ -256,8 +256,9 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
                             cellType = "RKRecord";
                             break;
                     }
-                    log.debug("({},{}) cellType: {}", rowNum, colNum, cellType);
-
+                    if(log.isTraceEnabled()) {
+                        log.trace("({},{}) cellType: {}", rowNum, colNum, cellType);
+                    }
                     if (colNum == 0 && rowNum > colNum) {
                         // 列从头开始，行好大于列号的时候代表换行了
                         if (rowNum == 1) {
@@ -370,7 +371,9 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
                     listArray.add(line);
                 }
                 cellType = attributes.getValue("t");
-                log.debug("({},{}) cellType: {}", currentRowNum, currentColNum, cellType);
+                if(log.isTraceEnabled()) {
+                    log.trace("({},{}) cellType: {}", currentRowNum, currentColNum, cellType);
+                }
             } else if ("mergeCell".equals(name)) {
                 // 处理合并区域取值，取左上值即可
                 String mergeRef = attributes.getValue("ref");

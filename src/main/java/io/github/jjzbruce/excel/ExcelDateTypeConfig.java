@@ -13,16 +13,24 @@ public class ExcelDateTypeConfig {
 
     private List<ExcelDateRange> ExcelDateTypeRanges = new ArrayList<>();
 
-    private String dateFormat = "yyyy-MM-dd";
+    private String dateFormat;
 
     public ExcelDateTypeConfig(int rowNum, int colNum) {
-        ExcelDateRange excelDateRange = new ExcelDateRange(rowNum, colNum);
-        ExcelDateTypeRanges.add(excelDateRange);
+        this(rowNum, colNum, "yyyy-MM-dd");
     }
 
-    public void setCoordinates(String startRef, String endRef) {
-        ExcelDateRange excelDateRange = new ExcelDateRange(startRef, endRef);
+    public ExcelDateTypeConfig(int rowNum, int colNum, String dateFormat) {
+        ExcelDateRange excelDateRange = new ExcelDateRange(rowNum, colNum);
         ExcelDateTypeRanges.add(excelDateRange);
+        this.dateFormat = dateFormat;
+    }
+
+    public ExcelDateTypeConfig(int[][] coordinates, String dateFormat) {
+        for (int i = 0; i < coordinates.length; i++) {
+            ExcelDateRange excelDateRange = new ExcelDateRange(coordinates[i][0], coordinates[i][1]);
+            ExcelDateTypeRanges.add(excelDateRange);
+        }
+        this.dateFormat = dateFormat;
     }
 
     public void setDateFormat(String dateFormat) {
@@ -34,11 +42,11 @@ public class ExcelDateTypeConfig {
     }
 
     public boolean isInRange(int row, int col) {
-        if(ExcelDateTypeRanges == null) {
+        if (ExcelDateTypeRanges == null) {
             return false;
         }
         for (ExcelDateRange excelDateTypeRange : ExcelDateTypeRanges) {
-            if(excelDateTypeRange.isInRange(row, col)) {
+            if (excelDateTypeRange.isInRange(row, col)) {
                 return true;
             }
         }

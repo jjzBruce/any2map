@@ -1,7 +1,7 @@
 package io.github.jjzbruce.excel;
 
 /**
- * Xlsx数据范围
+ * Xlsx数据范围。包含开始下标，不包含结束下标
  *
  * @author <a href="mailto:brucezhang_jjz@163.com">zhangjun</a>
  * @since 1.0.0
@@ -9,13 +9,21 @@ package io.github.jjzbruce.excel;
 public class SheetDataRange {
 
     private Integer headRowStart = 0;
+    private Integer headRowEnd = headRowStart + 1;
 
     private Integer dataRowStart = 1;
-    private Integer headRowEnd = dataRowStart;
-
     private Integer dataRowEnd = Integer.MAX_VALUE;
     private Integer dataColumnStart = 0;
     private Integer dataColumnEnd = Integer.MAX_VALUE;
+
+    public SheetDataRange() {
+    }
+
+    public SheetDataRange(Integer headRowStart, Integer headRowEnd, Integer dataRowStart) {
+        this.headRowStart = headRowStart;
+        this.headRowEnd = headRowEnd;
+        this.dataRowStart = dataRowStart;
+    }
 
     public Integer getDataRowStart() {
         return dataRowStart;

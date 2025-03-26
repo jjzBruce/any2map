@@ -100,10 +100,11 @@ Map<String, Object> map = x2ms.toMap();
 
 - Excel 多级Head实现
 - Excel 分组实现
-- xls 事件读取公式问题
+
 - 测试事件读取 hssf 和 xssf 的效率，确定最大读取大小。优化60M+文件读取
 - Mongo 数据转Map实现
 - Jdbc 数据转Map实现
+- xls 事件读取公式问题
 
 
 

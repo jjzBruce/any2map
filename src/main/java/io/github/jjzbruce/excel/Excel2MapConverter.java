@@ -46,8 +46,8 @@ public class Excel2MapConverter extends AbstractExcelMapConverter {
         try {
             workbook = WorkbookFactory.create(is);
             create = System.currentTimeMillis();
-            if (log.isDebugEnabled()) {
-                log.debug("创建Workbook耗时: {}", create - start);
+            if (log.isTraceEnabled()) {
+                log.trace("创建Workbook耗时: {}", create - start);
             }
         } catch (Throwable e) {
             throw new IllegalArgumentException("不支持的文件格式");
@@ -57,11 +57,12 @@ public class Excel2MapConverter extends AbstractExcelMapConverter {
         Map<Integer, SheetDataConfig> sheetDataConfigs = config.getSheetDataConfigs();
 
         long prepare = System.currentTimeMillis();
-        if (log.isDebugEnabled()) {
-            log.debug("输出Map准备阶段耗时: {}", prepare - create);
+        if (log.isTraceEnabled()) {
+            log.trace("输出Map准备阶段耗时: {}", prepare - create);
         }
 
         for (Integer sheetNo : sheetDataConfigs.keySet()) {
+            init(sheetNo);
             List<Map<String, Object>> listMap = new ArrayList<>();
             SheetDataConfig sheetDataConfig = sheetDataConfigs.get(sheetNo);
             SheetDataRange sheetDataRange = sheetDataConfig.getSheetDataRange();
@@ -77,8 +78,8 @@ public class Excel2MapConverter extends AbstractExcelMapConverter {
             map.put(sheet.getSheetName(), listMap);
         }
 
-        if (log.isDebugEnabled()) {
-            log.debug("输出Map数据耗时: {}", System.currentTimeMillis() - prepare);
+        if (log.isTraceEnabled()) {
+            log.trace("输出Map数据耗时: {}", System.currentTimeMillis() - prepare);
         }
         return map;
     }
@@ -152,8 +153,8 @@ public class Excel2MapConverter extends AbstractExcelMapConverter {
                 }
             }
         }
-        if (log.isDebugEnabled()) {
-            log.debug("处理sheet[{}] 耗时：{}", sheet.getSheetName(), System.currentTimeMillis() - start);
+        if (log.isTraceEnabled()) {
+            log.trace("处理sheet[{}] 耗时：{}", sheet.getSheetName(), System.currentTimeMillis() - start);
         }
     }
 

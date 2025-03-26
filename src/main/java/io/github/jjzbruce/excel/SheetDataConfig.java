@@ -14,6 +14,22 @@ public class SheetDataConfig {
     private Integer sheetIndex = 0;
     private SheetDataRange sheetDataRange;
 
+    public SheetDataConfig() {
+        this(0, new SheetDataRange());
+    }
+
+    public SheetDataConfig(SheetDataRange sheetDataRange) {
+        this(0, sheetDataRange);
+    }
+    public SheetDataConfig(Integer sheetIndex) {
+        this(sheetIndex, new SheetDataRange());
+    }
+
+    public SheetDataConfig(Integer sheetIndex, SheetDataRange sheetDataRange) {
+        this.sheetIndex = sheetIndex;
+        this.sheetDataRange = sheetDataRange;
+    }
+
     /**
      * Excel解析数据类型设置
      */

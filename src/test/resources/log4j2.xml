@@ -11,12 +11,10 @@
 	</appenders>
 
 	<loggers>
-		<logger name="io.github.jjzbruce" level="DEBUG">
+		<root level="WARN"></root>
+		<logger name="io.github.jjzbruce" level="TRACE">
 			<appender-ref ref="Console"/>
 		</logger>
-		<root level="INFO">
-			<appender-ref ref="Console"/>
-		</root>
 	</loggers>
 
 </configuration>

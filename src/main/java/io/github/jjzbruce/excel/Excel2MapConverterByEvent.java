@@ -1,5 +1,6 @@
 package io.github.jjzbruce.excel;
 
+import org.apache.poi.hssf.eventusermodel.EventWorkbookBuilder;
 import org.apache.poi.hssf.eventusermodel.HSSFEventFactory;
 import org.apache.poi.hssf.eventusermodel.HSSFListener;
 import org.apache.poi.hssf.eventusermodel.HSSFRequest;
@@ -73,14 +74,14 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
                 InputStream din = poifs.createDocumentInputStream("Workbook")) {
             HSSFRequest req = new HSSFRequest();
             Map<Integer, SheetDataConfig> sheetDataConfigs = config.getSheetDataConfigs();
-            HSSFWorkbook stubWorkbook = new HSSFWorkbook();
-            HssfDataListener hssfDataListener = new HssfDataListener(sheetDataConfigs, stubWorkbook);
+            HssfDataListener hssfDataListener = new HssfDataListener(sheetDataConfigs);
             req.addListenerForAllRecords(hssfDataListener);
             HSSFEventFactory factory = new HSSFEventFactory();
             factory.processEvents(req, din);
             Map<Integer, List<Object[]>> listArrayMap = hssfDataListener.getListArrayMap();
             Map<Integer, String> sheetNameMap = hssfDataListener.getSheetNameMap();
             for (Integer index : sheetDataConfigs.keySet()) {
+                init(index);
                 SheetDataConfig sheetDataConfig = sheetDataConfigs.get(index);
                 if (sheetDataConfig != null) {
                     List<Map<String, Object>> mapList = new ArrayList<>();
@@ -133,6 +134,7 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
                 String sheetName = sheets.getSheetName();
                 SheetDataConfig sheetDataConfig = sheetDataConfigs.get(sheetIndex);
                 if (sheetDataConfig != null) {
+                    init(sheetIndex);
                     List<Map<String, Object>> mapList = new ArrayList<>();
                     map.put(sheetName, mapList);
                     InputSource sheetSource = new InputSource(sheet);
@@ -175,22 +177,25 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
         return map;
     }
 
+    /**
+     * <pre>
+     *     解析顺序：所有的sheet信息 -> sheet[0]数据 -> sheet[1]数据 -> ...
+     * </pre>
+     */
     class HssfDataListener implements HSSFListener {
-        private HSSFDataFormatter formatter = new HSSFDataFormatter();
         private Map<Integer, SheetDataConfig> sheetDataConfigs;
-        private HSSFWorkbook stubWorkbook;
         private SSTRecord sstrec;
         private String sheetName;
-        private Integer sheetIndex;
+        private List<String> sheetNames = new ArrayList<>();
+        private Integer sheetIndex = null;
         private Map<Integer, List<Object[]>> listArrayMap = new HashMap<>();
         private List<Object[]> listArray = null;
         private List<Object> firstRowList = null;
         private Integer maxColNum;
         private Map<Integer, String> sheetNameMap = new HashMap<>();
 
-        public HssfDataListener(Map<Integer, SheetDataConfig> sheetDataConfigs, HSSFWorkbook stubWorkbook) {
+        public HssfDataListener(Map<Integer, SheetDataConfig> sheetDataConfigs) {
             this.sheetDataConfigs = sheetDataConfigs;
-            this.stubWorkbook = stubWorkbook;
         }
 
         public Map<Integer, List<Object[]>> getListArrayMap() {
@@ -199,6 +204,19 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
 
         public Map<Integer, String> getSheetNameMap() {
             return sheetNameMap;
+        }
+
+        private void init() {
+            if(this.sheetIndex == null) {
+                this.sheetIndex = 0;
+            } else {
+                this.sheetIndex = this.sheetIndex + 1;
+            }
+            this.listArray = new ArrayList<>();
+            this.firstRowList = new ArrayList<>();
+            this.maxColNum = null;
+            listArrayMap.put(sheetIndex, listArray);
+            sheetNameMap.put(sheetIndex, sheetName);
         }
 
         public void processRecord(Record record) {
@@ -256,7 +274,7 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
                             cellType = "RKRecord";
                             break;
                     }
-                    if(log.isTraceEnabled()) {
+                    if (log.isTraceEnabled()) {
                         log.trace("({},{}) cellType: {}", rowNum, colNum, cellType);
                     }
                     if (colNum == 0 && rowNum > colNum) {
@@ -274,7 +292,10 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
 
                     // 填充值
                     if (rowNum == 0) {
-                        firstRowList.add(value);
+                        while (colNum + 1 > firstRowList.size()) {
+                            firstRowList.add(null);
+                        }
+                        firstRowList.set(colNum, value);
                     } else {
                         listArray.get(listArray.size() - 1)[colNum] = value;
                     }
@@ -302,24 +323,27 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
             } else {
                 switch (sid) {
                     // the BOFRecord can represent either the beginning of a sheet or the workbook
+                    // sheet信息 -> sheet[0]数据 -> sheet[1]数据 -> ...
                     case BOFRecord.sid:
-                        // no thing...
+
                         break;
                     case BoundSheetRecord.sid:
                         BoundSheetRecord bsr = (BoundSheetRecord) record;
-                        if (sheetName == null) {
-                            sheetIndex = 0;
-                            sheetName = bsr.getSheetname();
-                        } else if (!bsr.getSheetname().equals(sheetName)) {
-                            sheetName = bsr.getSheetname();
-                            sheetIndex += 1;
-                        }
+//                        if (sheetName == null) {
+//                            sheetIndex = 0;
+//                            sheetName = bsr.getSheetname();
+//                        } else if (!bsr.getSheetname().equals(sheetName)) {
+//                            sheetName = bsr.getSheetname();
+//                            sheetIndex += 1;
+//                        }
+                        sheetNames.add(bsr.getSheetname());
+                        log.trace("hssf event add new sheet, sheet names: {}", sheetNames);
 
-                        this.listArray = new ArrayList<>();
-                        this.firstRowList = new ArrayList<>();
-                        this.maxColNum = null;
-                        listArrayMap.put(sheetIndex, listArray);
-                        sheetNameMap.put(sheetIndex, sheetName);
+//                        this.listArray = new ArrayList<>();
+//                        this.firstRowList = new ArrayList<>();
+//                        this.maxColNum = null;
+//                        listArrayMap.put(sheetIndex, listArray);
+//                        sheetNameMap.put(sheetIndex, sheetName);
                         break;
 //                    case SSTRecord.sid:
 //                        sstrec = (SSTRecord) record;
@@ -371,7 +395,7 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
                     listArray.add(line);
                 }
                 cellType = attributes.getValue("t");
-                if(log.isTraceEnabled()) {
+                if (log.isTraceEnabled()) {
                     log.trace("({},{}) cellType: {}", currentRowNum, currentColNum, cellType);
                 }
             } else if ("mergeCell".equals(name)) {
@@ -463,7 +487,10 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
 
                 // 填充值
                 if (currentRowNum == 0) {
-                    firstRowList.add(value);
+                    while (currentColNum + 1 > firstRowList.size()) {
+                        firstRowList.add(null);
+                    }
+                    firstRowList.set(currentColNum, value);
                 } else {
                     listArray.get(listArray.size() - 1)[currentColNum] = value;
                 }

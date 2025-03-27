@@ -19,19 +19,6 @@ public class SheetDataRangeConfig {
     public SheetDataRangeConfig() {
     }
 
-    public SheetDataRangeConfig(Integer headRowStart, Integer headRowEnd, Integer dataRowStart) {
-        this.headRowStart = headRowStart;
-        this.headRowEnd = headRowEnd;
-        this.dataRowStart = dataRowStart;
-    }
-
-    public SheetDataRangeConfig(Integer headRowStart, Integer headRowEnd, Integer dataRowStart, Integer dataColumnStart) {
-        this.headRowStart = headRowStart;
-        this.headRowEnd = headRowEnd;
-        this.dataRowStart = dataRowStart;
-        this.dataColumnStart = dataColumnStart;
-    }
-
     public Integer getDataRowStart() {
         return dataRowStart;
     }
@@ -70,10 +57,6 @@ public class SheetDataRangeConfig {
 
     public Integer getHeadRowEnd() {
         return headRowEnd;
-    }
-
-    public void setHeadRowEnd(Integer headRowEnd) {
-        this.headRowEnd = headRowEnd;
     }
 
     @Override

@@ -18,12 +18,6 @@ public abstract class AbstractExcelMapConverter implements MapConverter<ExcelCon
      */
     protected ExcelConvertConfig config;
 
-//    /**
-//     * 列标题缓存，key:列下标
-//     * TODO 需要实现多层下标的情况
-//     */
-//    protected Map<Integer, String> headValueCache = new HashMap<>();
-
     /**
      * 当前sheet下标
      */
@@ -36,10 +30,6 @@ public abstract class AbstractExcelMapConverter implements MapConverter<ExcelCon
 
     protected AbstractExcelMapConverter(ExcelConvertConfig config) {
         this.config = config;
-    }
-
-    public ExcelConvertConfig getConfig() {
-        return config;
     }
 
     protected void init(Integer currentSheetIndex) {
@@ -86,44 +76,12 @@ public abstract class AbstractExcelMapConverter implements MapConverter<ExcelCon
         }
     }
 
-//    protected void setMapData(int colNum, Object value, Map<String, Object> lineMap, Consumer<Object> after) {
-//        String head = headValueCache.get(colNum);
-//        lineMap.put(head, value);
-//        if (after != null) {
-//            after.accept(value);
-//        }
-//    }
-
     protected void setHeadTitle(int rowNum, int colNum, String value) {
         if (value == null) {
             return;
         }
         excelHead.setHeads(rowNum, colNum, value);
     }
-
-
-//    /**
-//     * 维护标题缓存
-//     */
-//    protected void setHeadTitle(int colNum, String value) {
-//        if (value == null) {
-//            return;
-//        }
-//        headValueCache.put(colNum, value);
-//        // TODO 多行标题的时候使用
-//        // 维护扩列标题，一般 [1, 1]: 标题1，[1, 4]: 标题2；那么[1, 2], [1, 3] 的标题为标题1
-//        int jj = colNum - 1;
-//        List<Integer> needs = new LinkedList<>();
-//        while (!headValueCache.containsKey(jj) && jj >= 0) {
-//            needs.add(jj--);
-//        }
-//        if (!needs.isEmpty()) {
-//            String addTitle = headValueCache.get(jj);
-//            if (addTitle != null) {
-//                needs.forEach(jjj -> headValueCache.put(jjj, addTitle));
-//            }
-//        }
-//    }
 
     @Override
     public ExcelConvertConfig getConvertConfig() {

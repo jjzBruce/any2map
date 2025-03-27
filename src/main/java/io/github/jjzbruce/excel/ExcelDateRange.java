@@ -22,15 +22,6 @@ public class ExcelDateRange {
         this.lastColNum = colNum;
     }
 
-    public ExcelDateRange(String startRef, String endRef) {
-        CellReference firstCr = new CellReference(startRef);
-        this.firstRowNum = firstCr.getRow();
-        this.firstColNum = firstCr.getCol();
-        CellReference lastCr = new CellReference(endRef);
-        this.lastRowNum = lastCr.getRow();
-        this.lastColNum = lastCr.getCol();
-    }
-
     public boolean isInRange(int row, int col) {
         return row >= firstRowNum && row <= lastRowNum && col >= firstColNum && col <= lastColNum;
     }

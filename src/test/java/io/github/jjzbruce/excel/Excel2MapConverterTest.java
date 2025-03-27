@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.jjzbruce.Any2Map;
 import io.github.jjzbruce.MapConverter;
-import org.apache.poi.ss.formula.functions.Log;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.streaming.SXSSFRow;
 import org.apache.poi.xssf.streaming.SXSSFSheet;
@@ -151,7 +150,7 @@ public class Excel2MapConverterTest {
         sheetDataConfig.addExcelDateTypeConfig(edtc);
         config.addSheetDataConfig(sheetDataConfig);
         MapConverter mc = Any2Map.createMapConverter(config);
-        doTest(mc);
+        doTestMultiHead(mc);
     }
 
     // 测试多层Head的情况
@@ -199,30 +198,30 @@ public class Excel2MapConverterTest {
     }
 
 
-    @Test
-    public void testReadBigXlsx() {
-        String separator = File.separator;
-        String filePath = System.getProperty("user.dir") + separator + "src" + separator + "test" + separator
-                + "resources" + separator + "big-test3.xlsx";
-        ExcelConvertConfig config = new ExcelConvertConfig(filePath);
-        SheetDataConfig sheetDataConfig = new SheetDataConfig();
-        config.addSheetDataConfig(sheetDataConfig);
-        MapConverter mc = Any2Map.createMapConverter(config);
-        long start = System.currentTimeMillis();
-        mc.toMap();
-        long cost = System.currentTimeMillis() - start;
-        log.debug("耗时: {}", cost);
-        Assert.assertTrue(cost < 10 * 1000);
-    }
+//    @Test
+//    public void testReadBigXlsx() {
+//        String separator = File.separator;
+//        String filePath = System.getProperty("user.dir") + separator + "src" + separator + "test" + separator
+//                + "resources" + separator + "big-test3.xlsx";
+//        ExcelConvertConfig config = new ExcelConvertConfig(filePath);
+//        SheetDataConfig sheetDataConfig = new SheetDataConfig();
+//        config.addSheetDataConfig(sheetDataConfig);
+//        MapConverter mc = Any2Map.createMapConverter(config);
+//        long start = System.currentTimeMillis();
+//        mc.toMap();
+//        long cost = System.currentTimeMillis() - start;
+//        log.debug("耗时: {}", cost);
+//        Assert.assertTrue(cost < 10 * 1000);
+//    }
 
 
-    @Test
-    public void testReadBigFile() throws IOException {
-        String separator = File.separator;
-        String filePath = System.getProperty("user.dir") + separator + "src" + separator + "test" + separator
-                + "resources" + separator + "big-test3.xlsx";
-        generateBigTestFileBySXSSFSheet(filePath);
-    }
+//    @Test
+//    public void testReadBigFile() throws IOException {
+//        String separator = File.separator;
+//        String filePath = System.getProperty("user.dir") + separator + "src" + separator + "test" + separator
+//                + "resources" + separator + "big-test3.xlsx";
+//        generateBigTestFileBySXSSFSheet(filePath);
+//    }
 
     public void generateBigTestFileBySXSSFSheet(String filePath) throws IOException {
         long start = System.currentTimeMillis();

@@ -79,7 +79,7 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
             HSSFEventFactory factory = new HSSFEventFactory();
             factory.processEvents(req, din);
             Map<Integer, List<Object[]>> listArrayMap = hssfDataListener.getListArrayMap();
-            Map<Integer, String> sheetNameMap = hssfDataListener.getSheetNameMap();
+            List<String> sheetNames = hssfDataListener.getSheetNames();
             for (Integer index : sheetDataConfigs.keySet()) {
                 init(index);
                 SheetDataConfig sheetDataConfig = sheetDataConfigs.get(index);
@@ -100,7 +100,7 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
                             mapList.add(lineMap);
                         }
                     }
-                    map.put(sheetNameMap.get(index), mapList);
+                    map.put(sheetNames.get(index), mapList);
                 }
             }
             if (log.isDebugEnabled()) {
@@ -185,14 +185,25 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
     class HssfDataListener implements HSSFListener {
         private Map<Integer, SheetDataConfig> sheetDataConfigs;
         private SSTRecord sstrec;
-        private String sheetName;
         private List<String> sheetNames = new ArrayList<>();
-        private Integer sheetIndex = null;
+        /**
+         * 当前的sheet下标，初始值是 -2
+         * 通过 {@link BOFRecord}来更新，每次 +1
+         * 当 sheet name 加载之前， 该值会更新为 -1。获取所有的 sheet name 之后，在数据加载之前，值会更新为 0
+         */
+        private int sheetIndex = -2;
         private Map<Integer, List<Object[]>> listArrayMap = new HashMap<>();
         private List<Object[]> listArray = null;
         private List<Object> firstRowList = null;
         private Integer maxColNum;
-        private Map<Integer, String> sheetNameMap = new HashMap<>();
+
+        public List<String> getSheetNames() {
+            return sheetNames;
+        }
+
+        private String getSheetName() {
+            return sheetNames.get(sheetIndex);
+        }
 
         public HssfDataListener(Map<Integer, SheetDataConfig> sheetDataConfigs) {
             this.sheetDataConfigs = sheetDataConfigs;
@@ -202,26 +213,37 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
             return listArrayMap;
         }
 
-        public Map<Integer, String> getSheetNameMap() {
-            return sheetNameMap;
-        }
-
         private void init() {
-            if(this.sheetIndex == null) {
-                this.sheetIndex = 0;
-            } else {
-                this.sheetIndex = this.sheetIndex + 1;
-            }
             this.listArray = new ArrayList<>();
             this.firstRowList = new ArrayList<>();
             this.maxColNum = null;
             listArrayMap.put(sheetIndex, listArray);
-            sheetNameMap.put(sheetIndex, sheetName);
         }
 
         public void processRecord(Record record) {
             short sid = record.getSid();
-            if (sheetIndex != null && sheetDataConfigs.containsKey(sheetIndex)) {
+            switch (sid) {
+                // the BOFRecord can represent either the beginning of a sheet or the workbook
+                // sheet信息 -> sheet[0]数据 -> sheet[1]数据 -> ...
+                case BOFRecord.sid:
+                    ++sheetIndex;
+                    if (sheetIndex >= 0) {
+                        init();
+                    }
+                    if (log.isTraceEnabled()) {
+                        log.trace("BOFRecord sheetIndex: {}", sheetIndex);
+                    }
+                    break;
+                case BoundSheetRecord.sid:
+                    BoundSheetRecord bsr = (BoundSheetRecord) record;
+                    sheetNames.add(bsr.getSheetname());
+                    log.trace("hssf event add new sheet, sheet names: {}", sheetNames);
+                    break;
+                case SSTRecord.sid:
+                    sstrec = (SSTRecord) record;
+                    break;
+            }
+            if (sheetDataConfigs.containsKey(sheetIndex)) {
                 SheetDataConfig sheetDataConfig = sheetDataConfigs.get(sheetIndex);
                 if (record instanceof CellRecord) {
                     CellRecord cr = (CellRecord) record;
@@ -257,14 +279,18 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
                                     Date date = org.apache.poi.ss.usermodel.DateUtil.getJavaDate(dateValue);
                                     value = new SimpleDateFormat(excelDataType.getDateFormat()).format(date);
                                 } catch (Throwable ignored) {
-                                    log.debug("数据转为时间错误 ({},{}): {}", rowNum, colNum, value);
+                                    if (log.isTraceEnabled()) {
+                                        log.trace("数据转为时间错误 ({},{}): {}", rowNum, colNum, value);
+                                    }
                                 }
                             } else if (!("b").equals(cellType) && !("d").equals(cellType)) {
                                 // 尝试当成 数字来处理
                                 try {
                                     value = Double.parseDouble(value + "");
                                 } catch (Throwable ignored) {
-                                    log.debug("数据转为数字错误 ({},{}): {}", rowNum, colNum, value);
+                                    if (log.isTraceEnabled()) {
+                                        log.trace("数据转为数字错误 ({},{}): {}", rowNum, colNum, value);
+                                    }
                                 }
                             }
 
@@ -319,35 +345,6 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
                     if (sid == SSTRecord.sid) {
                         sstrec = (SSTRecord) record;
                     }
-                }
-            } else {
-                switch (sid) {
-                    // the BOFRecord can represent either the beginning of a sheet or the workbook
-                    // sheet信息 -> sheet[0]数据 -> sheet[1]数据 -> ...
-                    case BOFRecord.sid:
-
-                        break;
-                    case BoundSheetRecord.sid:
-                        BoundSheetRecord bsr = (BoundSheetRecord) record;
-//                        if (sheetName == null) {
-//                            sheetIndex = 0;
-//                            sheetName = bsr.getSheetname();
-//                        } else if (!bsr.getSheetname().equals(sheetName)) {
-//                            sheetName = bsr.getSheetname();
-//                            sheetIndex += 1;
-//                        }
-                        sheetNames.add(bsr.getSheetname());
-                        log.trace("hssf event add new sheet, sheet names: {}", sheetNames);
-
-//                        this.listArray = new ArrayList<>();
-//                        this.firstRowList = new ArrayList<>();
-//                        this.maxColNum = null;
-//                        listArrayMap.put(sheetIndex, listArray);
-//                        sheetNameMap.put(sheetIndex, sheetName);
-                        break;
-//                    case SSTRecord.sid:
-//                        sstrec = (SSTRecord) record;
-//                        break;
                 }
             }
         }

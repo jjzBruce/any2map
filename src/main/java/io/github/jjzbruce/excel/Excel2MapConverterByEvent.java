@@ -1,14 +1,10 @@
 package io.github.jjzbruce.excel;
 
-import org.apache.poi.hssf.eventusermodel.EventWorkbookBuilder;
 import org.apache.poi.hssf.eventusermodel.HSSFEventFactory;
 import org.apache.poi.hssf.eventusermodel.HSSFListener;
 import org.apache.poi.hssf.eventusermodel.HSSFRequest;
-import org.apache.poi.hssf.model.HSSFFormulaParser;
 import org.apache.poi.hssf.record.*;
 import org.apache.poi.hssf.record.cont.ContinuableRecord;
-import org.apache.poi.hssf.usermodel.HSSFDataFormatter;
-import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.poifs.filesystem.POIFSFileSystem;
 import org.apache.poi.ss.util.CellRangeAddress;
@@ -85,7 +81,7 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
                 SheetDataConfig sheetDataConfig = sheetDataConfigs.get(index);
                 if (sheetDataConfig != null) {
                     List<Map<String, Object>> mapList = new ArrayList<>();
-                    SheetDataRange sheetDataRange = sheetDataConfig.getSheetDataRange();
+                    SheetDataRangeConfig sheetDataRange = sheetDataConfig.getSheetDataRange();
                     if (sheetDataRange == null) {
                         sheetDataRange = config.getDefaultDataRange();
                     }
@@ -145,7 +141,7 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
 
                     List<Object[]> listArray = handler.getListArray();
                     for (int i = 0; i < listArray.size(); i++) {
-                        SheetDataRange sheetDataRange = sheetDataConfig.getSheetDataRange();
+                        SheetDataRangeConfig sheetDataRange = sheetDataConfig.getSheetDataRange();
                         if (sheetDataRange == null) {
                             sheetDataRange = config.getDefaultDataRange();
                         }
@@ -194,8 +190,10 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
         private int sheetIndex = -2;
         private Map<Integer, List<Object[]>> listArrayMap = new HashMap<>();
         private List<Object[]> listArray = null;
-        private List<Object> firstRowList = null;
-        private Integer maxColNum;
+        /**
+         * 列长
+         */
+        private int colLength = 0;
 
         public List<String> getSheetNames() {
             return sheetNames;
@@ -215,8 +213,7 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
 
         private void init() {
             this.listArray = new ArrayList<>();
-            this.firstRowList = new ArrayList<>();
-            this.maxColNum = null;
+            this.colLength = 0;
             listArrayMap.put(sheetIndex, listArray);
         }
 
@@ -283,7 +280,7 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
                                         log.trace("数据转为时间错误 ({},{}): {}", rowNum, colNum, value);
                                     }
                                 }
-                            } else if (!("b").equals(cellType) && !("d").equals(cellType)) {
+                            } else if (BoolErrRecord.sid != sid && LabelSSTRecord.sid != sid) {
                                 // 尝试当成 数字来处理
                                 try {
                                     value = Double.parseDouble(value + "");
@@ -296,35 +293,27 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
 
                             break;
                         case RKRecord.sid:
-                            RKRecord rkr = (RKRecord) record;
                             cellType = "RKRecord";
                             break;
                     }
                     if (log.isTraceEnabled()) {
                         log.trace("({},{}) cellType: {}", rowNum, colNum, cellType);
                     }
-                    if (colNum == 0 && rowNum > colNum) {
-                        // 列从头开始，行好大于列号的时候代表换行了
-                        if (rowNum == 1) {
-                            // 第0行扫描完成，可以获取最大列数
-                            maxColNum = firstRowList.size();
-                            // 第0行填充到数组中
-                            Object[] firstLine = firstRowList.toArray(new Object[firstRowList.size()]);
-                            listArray.add(firstLine);
-                        }
-                        Object[] line = new Object[maxColNum];
-                        listArray.add(line);
-                    }
-
                     // 填充值
-                    if (rowNum == 0) {
-                        while (colNum + 1 > firstRowList.size()) {
-                            firstRowList.add(null);
-                        }
-                        firstRowList.set(colNum, value);
-                    } else {
-                        listArray.get(listArray.size() - 1)[colNum] = value;
+                    while (rowNum + 1 > listArray.size()) {
+                        listArray.add(new Object[colLength]);
                     }
+                    Object[] lineValues = listArray.get(rowNum);
+                    // 更新列长
+                    if (colNum >= colLength) {
+                        colLength = colNum + 1;
+                    }
+                    // 更新数字长度
+                    if (lineValues.length < colLength) {
+                        lineValues = Arrays.copyOf(lineValues, colLength);
+                    }
+                    lineValues[colNum] = value;
+                    listArray.set(rowNum, lineValues);
                 } else if (record instanceof StandardRecord) {
                     // 处理合并区域
                     if (sid == MergeCellsRecord.sid) {
@@ -359,8 +348,10 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
         private int currentColNum;
         private String cellType;
         private List<Object[]> listArray = new LinkedList<>();
-        private List<Object> firstRowList = new LinkedList<>();
-        private int maxColNum;
+        /**
+         * 列长
+         */
+        private int colLength = 0;
 
         public List<Object[]> getListArray() {
             return listArray;
@@ -374,23 +365,11 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
         @Override
         public void startElement(String uri, String localName, String name, Attributes attributes) {
             if ("c".equals(name)) {
+                // c => cell
                 String ref = attributes.getValue("r");
                 CellReference cr = new CellReference(ref);
                 currentRowNum = cr.getRow();
                 currentColNum = cr.getCol();
-                // c => cell
-                if (currentColNum == 0 && currentRowNum > currentColNum) {
-                    // 列从头开始，行好大于列号的时候代表换行了
-                    if (currentRowNum == 1) {
-                        // 第0行扫描完成，可以获取最大列数
-                        maxColNum = firstRowList.size();
-                        // 第0行填充到数组中
-                        Object[] firstLine = firstRowList.toArray(new Object[firstRowList.size()]);
-                        listArray.add(firstLine);
-                    }
-                    Object[] line = new Object[maxColNum];
-                    listArray.add(line);
-                }
                 cellType = attributes.getValue("t");
                 if (log.isTraceEnabled()) {
                     log.trace("({},{}) cellType: {}", currentRowNum, currentColNum, cellType);
@@ -481,16 +460,21 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
                         }
                     }
                 }
-
                 // 填充值
-                if (currentRowNum == 0) {
-                    while (currentColNum + 1 > firstRowList.size()) {
-                        firstRowList.add(null);
-                    }
-                    firstRowList.set(currentColNum, value);
-                } else {
-                    listArray.get(listArray.size() - 1)[currentColNum] = value;
+                while (currentRowNum + 1 > listArray.size()) {
+                    listArray.add(new Object[colLength]);
                 }
+                Object[] lineValues = listArray.get(currentRowNum);
+                // 更新列长
+                if (currentColNum >= colLength) {
+                    colLength = currentColNum + 1;
+                }
+                // 更新数字长度
+                if (lineValues.length < colLength) {
+                    lineValues = Arrays.copyOf(lineValues, colLength);
+                }
+                lineValues[currentColNum] = value;
+                listArray.set(currentRowNum, lineValues);
             }
         }
 

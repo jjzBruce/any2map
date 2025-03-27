@@ -12,20 +12,24 @@ import java.util.List;
 public class SheetDataConfig {
 
     private Integer sheetIndex = 0;
-    private SheetDataRange sheetDataRange;
+    private SheetDataRangeConfig sheetDataRange;
 
     public SheetDataConfig() {
-        this(0, new SheetDataRange());
+        this(0, new SheetDataRangeConfig());
     }
 
-    public SheetDataConfig(SheetDataRange sheetDataRange) {
+    public SheetDataConfig(SheetDataRangeConfig sheetDataRange) {
         this(0, sheetDataRange);
     }
     public SheetDataConfig(Integer sheetIndex) {
-        this(sheetIndex, new SheetDataRange());
+        this(sheetIndex, new SheetDataRangeConfig());
     }
 
-    public SheetDataConfig(Integer sheetIndex, SheetDataRange sheetDataRange) {
+    public void setSheetIndex(Integer sheetIndex) {
+        this.sheetIndex = sheetIndex;
+    }
+
+    public SheetDataConfig(Integer sheetIndex, SheetDataRangeConfig sheetDataRange) {
         this.sheetIndex = sheetIndex;
         this.sheetDataRange = sheetDataRange;
     }
@@ -39,11 +43,7 @@ public class SheetDataConfig {
         return sheetIndex;
     }
 
-    public void setSheetIndex(Integer sheetIndex) {
-        this.sheetIndex = sheetIndex;
-    }
-
-    public SheetDataRange getSheetDataRange() {
+    public SheetDataRangeConfig getSheetDataRange() {
         return sheetDataRange;
     }
 

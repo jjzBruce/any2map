@@ -65,7 +65,7 @@ public class Excel2MapConverter extends AbstractExcelMapConverter {
             init(sheetNo);
             List<Map<String, Object>> listMap = new ArrayList<>();
             SheetDataConfig sheetDataConfig = sheetDataConfigs.get(sheetNo);
-            SheetDataRange sheetDataRange = sheetDataConfig.getSheetDataRange();
+            SheetDataRangeConfig sheetDataRange = sheetDataConfig.getSheetDataRange();
             if (sheetDataRange == null) {
                 sheetDataRange = config.getDefaultDataRange();
             }
@@ -84,7 +84,7 @@ public class Excel2MapConverter extends AbstractExcelMapConverter {
         return map;
     }
 
-    public void convertSheetData(Sheet sheet, SheetDataRange sheetDataRange, FormulaEvaluator evaluator, Integer headRowStart,
+    public void convertSheetData(Sheet sheet, SheetDataRangeConfig sheetDataRange, FormulaEvaluator evaluator, Integer headRowStart,
                                  Integer dataRowStart, Integer dataRowEnd, Integer dataColumnStart, Integer dataColumnEnd,
                                  List<Map<String, Object>> mapList, BiPredicate<Object, Object>... skipRowTest) {
         long start = System.currentTimeMillis();

@@ -3,6 +3,7 @@ package io.github.jjzbruce.excel;
 import io.github.jjzbruce.ConvertConfig;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Excel Convert Config
@@ -11,6 +12,7 @@ import java.util.*;
  * @since 1.0.0
  */
 public class ExcelConvertConfig implements ConvertConfig {
+
     /**
      * 数据源
      */
@@ -19,12 +21,12 @@ public class ExcelConvertConfig implements ConvertConfig {
     /**
      * sheet 数据配置
      */
-    private Map<Integer, SheetDataConfig> sheetDataConfigs = new TreeMap<>(Comparator.comparingInt(x -> x));
+    private List<SheetDataConfig> sheetDataConfigs = new ArrayList<>();
 
     /**
      * sheet 中数据范围的默认配置
      */
-    private SheetDataRange defaultDataRange = new SheetDataRange();
+    private SheetDataRangeConfig defaultDataRange = new SheetDataRangeConfig();
 
     private Class<? extends AbstractExcelMapConverter> delegateImpl = Excel2MapConverterByEvent.class;
 
@@ -34,28 +36,29 @@ public class ExcelConvertConfig implements ConvertConfig {
 
     public ExcelConvertConfig(Object source, Class<? extends AbstractExcelMapConverter> delegateImpl) {
         this.source = source;
-        if(delegateImpl != null) {
+        if (delegateImpl != null) {
             this.delegateImpl = delegateImpl;
         }
     }
 
-    public ExcelConvertConfig(Object source, SheetDataRange defaultDataRange) {
+    public ExcelConvertConfig(Object source, SheetDataRangeConfig defaultDataRange) {
         this.source = source;
-        if(defaultDataRange != null) {
+        if (defaultDataRange != null) {
             this.defaultDataRange = defaultDataRange;
         }
     }
 
-    public SheetDataRange getDefaultDataRange() {
+    public SheetDataRangeConfig getDefaultDataRange() {
         return defaultDataRange;
     }
 
     public Map<Integer, SheetDataConfig> getSheetDataConfigs() {
-        return sheetDataConfigs;
+        return this.sheetDataConfigs.stream().collect(Collectors.toMap(SheetDataConfig::getSheetIndex,
+                x -> x, (m1, m2) -> m1));
     }
 
     public void addSheetDataConfig(SheetDataConfig sheetDataConfig) {
-        this.sheetDataConfigs.put(sheetDataConfig.getSheetIndex(), sheetDataConfig);
+        this.sheetDataConfigs.add(sheetDataConfig);
     }
 
     public Class<? extends AbstractExcelMapConverter> getDelegateImpl() {

@@ -121,17 +121,27 @@ public class Excel2MapConverterTest {
         String filePath = System.getProperty("user.dir") + separator + "src" + separator + "test" + separator
                 + "resources" + separator + "test.xlsx";
         ExcelConvertConfig config = new ExcelConvertConfig(filePath);
-        // 指定数据范围，标题行是[0, 2)，数据行从2开始
-        SheetDataRange sheetDataRange = new SheetDataRange(0, 2, 2);
+        // 指定数据范围，标题行是[1, 3)，数据行从3开始，数据列从1开始
+        SheetDataRangeConfig.SheetDataRangeBuilder builder = new SheetDataRangeConfig.SheetDataRangeBuilder();
+        builder.headRowStart(1).headRowEnd(3).dataRowStart(3).dataColumnStart(1);
+        SheetDataRangeConfig sheetDataRange = builder.build();
         // sheet下标为1
         SheetDataConfig sheetDataConfig = new SheetDataConfig(1, sheetDataRange);
         // 指定多个时间坐标和格式化
         ExcelDateTypeConfig edtc = new ExcelDateTypeConfig(
-                new int[][]{{3,6}, {4,5}, {4,6}}, "yyyy-MM-dd HH:mm:ss");
+                new int[][]{{4,7}, {5,6}, {5,7}}, "yyyy-MM-dd HH:mm:ss");
         sheetDataConfig.addExcelDateTypeConfig(edtc);
         config.addSheetDataConfig(sheetDataConfig);
         MapConverter mc = Any2Map.createMapConverter(config);
-        doTestMultiHead(mc);
+        doTestMultiHead(mc, "S2");
+
+        // sheet S3 测试
+        sheetDataConfig.setSheetIndex(2);
+        SheetDataRangeConfig sdr = sheetDataConfig.getSheetDataRange();
+        sdr.setDataRowEnd(6);
+        sdr.setDataColumnEnd(8);
+        MapConverter mc2 = Any2Map.createMapConverter(config);
+        doTestMultiHead(mc2, "S3");
     }
 
     @Test
@@ -140,21 +150,31 @@ public class Excel2MapConverterTest {
         String filePath = System.getProperty("user.dir") + separator + "src" + separator + "test" + separator
                 + "resources" + separator + "test.xls";
         ExcelConvertConfig config = new ExcelConvertConfig(filePath);
-        // 指定数据范围，标题行是[0, 2)，数据行从2开始
-        SheetDataRange sheetDataRange = new SheetDataRange(0, 2, 2);
+        // 指定数据范围，标题行是[1, 3)，数据行从3开始，数据列从1开始
+        SheetDataRangeConfig.SheetDataRangeBuilder builder = new SheetDataRangeConfig.SheetDataRangeBuilder();
+        builder.headRowStart(1).headRowEnd(3).dataRowStart(3).dataColumnStart(1);
+        SheetDataRangeConfig sheetDataRange = builder.build();
         // sheet下标为1
         SheetDataConfig sheetDataConfig = new SheetDataConfig(1, sheetDataRange);
         // 指定多个时间坐标和格式化
         ExcelDateTypeConfig edtc = new ExcelDateTypeConfig(
-                new int[][]{{3,6}, {4,5}, {4,6}}, "yyyy-MM-dd HH:mm:ss");
+                new int[][]{{4,7}, {5,6}, {5,7}}, "yyyy-MM-dd HH:mm:ss");
         sheetDataConfig.addExcelDateTypeConfig(edtc);
         config.addSheetDataConfig(sheetDataConfig);
         MapConverter mc = Any2Map.createMapConverter(config);
-        doTestMultiHead(mc);
+        doTestMultiHead(mc, "S2");
+
+        // sheet S3 测试
+        sheetDataConfig.setSheetIndex(2);
+        SheetDataRangeConfig sdr = sheetDataConfig.getSheetDataRange();
+        sdr.setDataRowEnd(6);
+        sdr.setDataColumnEnd(8);
+        MapConverter mc2 = Any2Map.createMapConverter(config);
+        doTestMultiHead(mc2, "S3");
     }
 
     // 测试多层Head的情况
-    public void doTestMultiHead(MapConverter mc) throws JsonProcessingException {
+    public void doTestMultiHead(MapConverter mc, String sheetName) throws JsonProcessingException {
         ObjectMapper objectMapper = new ObjectMapper();
         String configJson = objectMapper.writeValueAsString(mc.getConvertConfig());
         System.out.println("===== 配置 =====");
@@ -164,8 +184,8 @@ public class Excel2MapConverterTest {
         String json = objectMapper.writeValueAsString(map);
         System.out.println(json);
 
-        Assert.assertTrue(map.containsKey("S2"));
-        List<Map<String, Object>> list = (List<Map<String, Object>>) map.get("S2");
+        Assert.assertTrue(map.containsKey(sheetName));
+        List<Map<String, Object>> list = (List<Map<String, Object>>) map.get(sheetName);
         Assert.assertEquals(3, list.size());
 
         Map<String, Object> m0 = list.get(0);

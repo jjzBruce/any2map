@@ -6,7 +6,7 @@ package io.github.jjzbruce.excel;
  * @author <a href="mailto:brucezhang_jjz@163.com">zhangjun</a>
  * @since 1.0.0
  */
-public class SheetDataRange {
+public class SheetDataRangeConfig {
 
     private Integer headRowStart = 0;
     private Integer headRowEnd = headRowStart + 1;
@@ -16,13 +16,20 @@ public class SheetDataRange {
     private Integer dataColumnStart = 0;
     private Integer dataColumnEnd = Integer.MAX_VALUE;
 
-    public SheetDataRange() {
+    public SheetDataRangeConfig() {
     }
 
-    public SheetDataRange(Integer headRowStart, Integer headRowEnd, Integer dataRowStart) {
+    public SheetDataRangeConfig(Integer headRowStart, Integer headRowEnd, Integer dataRowStart) {
         this.headRowStart = headRowStart;
         this.headRowEnd = headRowEnd;
         this.dataRowStart = dataRowStart;
+    }
+
+    public SheetDataRangeConfig(Integer headRowStart, Integer headRowEnd, Integer dataRowStart, Integer dataColumnStart) {
+        this.headRowStart = headRowStart;
+        this.headRowEnd = headRowEnd;
+        this.dataRowStart = dataRowStart;
+        this.dataColumnStart = dataColumnStart;
     }
 
     public Integer getDataRowStart() {
@@ -79,5 +86,47 @@ public class SheetDataRange {
                 ", dataColumnStart=" + dataColumnStart +
                 ", dataColumnEnd=" + dataColumnEnd +
                 '}';
+    }
+
+    public static class SheetDataRangeBuilder {
+        private SheetDataRangeConfig sheetDataRange;
+
+        public SheetDataRangeBuilder() {
+            this.sheetDataRange = new SheetDataRangeConfig();
+        }
+
+        public SheetDataRangeBuilder headRowStart(Integer headRowStart) {
+            sheetDataRange.headRowStart = headRowStart;
+            return this;
+        }
+
+        public SheetDataRangeBuilder headRowEnd(Integer headRowEnd) {
+            sheetDataRange.headRowEnd = headRowEnd;
+            return this;
+        }
+
+        public SheetDataRangeBuilder dataRowStart(Integer dataRowStart) {
+            sheetDataRange.dataRowStart = dataRowStart;
+            return this;
+        }
+
+        public SheetDataRangeBuilder dataRowEnd(Integer dataRowEnd) {
+            sheetDataRange.dataRowEnd = dataRowEnd;
+            return this;
+        }
+
+        public SheetDataRangeBuilder dataColumnStart(Integer dataColumnStart) {
+            sheetDataRange.dataColumnStart = dataColumnStart;
+            return this;
+        }
+
+        public SheetDataRangeBuilder dataColumnEnd(Integer dataColumnEnd) {
+            sheetDataRange.dataColumnEnd = dataColumnEnd;
+            return this;
+        }
+
+        public SheetDataRangeConfig build() {
+            return sheetDataRange;
+        }
     }
 }

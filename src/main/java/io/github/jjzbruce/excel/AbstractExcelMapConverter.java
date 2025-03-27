@@ -45,11 +45,11 @@ public abstract class AbstractExcelMapConverter implements MapConverter<ExcelCon
     protected void init(Integer currentSheetIndex) {
         this.currentSheetIndex = currentSheetIndex;
         SheetDataConfig sheetDataConfig = config.getSheetDataConfigs().get(this.currentSheetIndex);
-        SheetDataRange sheetDataRange = sheetDataConfig.getSheetDataRange();
+        SheetDataRangeConfig sheetDataRange = sheetDataConfig.getSheetDataRange();
         this.excelHead = new ExcelHead(sheetDataRange.getHeadRowStart(), sheetDataRange.getHeadRowEnd());
     }
 
-    protected void fillData(SheetDataRange sheetDataRange, int rowNum, int colNum, Object value,
+    protected void fillData(SheetDataRangeConfig sheetDataRange, int rowNum, int colNum, Object value,
                             Map<String, Object> map, Consumer<Object> afterSetMapData) {
         if (sheetDataRange == null) {
             return;

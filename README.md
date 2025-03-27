@@ -5,9 +5,9 @@
 目前，此系统包含有以下功能：
 
 - Excel 转 Map
-- 功能2
-- 功能3
-- 
+  - 支持多级标题
+  - 支持横向分组
+
 
 ## 准备
 
@@ -38,9 +38,9 @@ ExcelDateTypeConfig edtc = new ExcelDateTypeConfig(0, 5);
 sheetDataConfig.addExcelDateTypeConfig(edtc);
 config.addSheetDataConfig(sheetDataConfig);
 // 根据配置创建转换器
-MapConverter x2ms = Any2Map.createMapConverter(config2);
+MapConverter mc = Any2Map.createMapConverter(config2);
 // 输出结果
-Map<String, Object> map = x2ms.toMap();
+Map<String, Object> map = mc.toMap();
 ```
 
 如下Excel：
@@ -84,7 +84,93 @@ Map<String, Object> map = x2ms.toMap();
 
 #### 将多级Head的Excel转Map
 
+```java
+String filePath = "path/to/your/file.xlsx";
+// 创建转换配置
+ExcelConvertConfig config = new ExcelConvertConfig(filePath);
 
+// 指定数据范围，标题行是[1, 3)，数据行从3开始，数据列从1开始
+SheetDataRangeConfig.SheetDataRangeBuilder builder = new SheetDataRangeConfig.SheetDataRangeBuilder();
+builder.headRowStart(1).headRowEnd(3).dataRowStart(3).dataColumnStart(1);
+SheetDataRangeConfig sheetDataRange = builder.build();
+
+// sheet下标为1
+SheetDataConfig sheetDataConfig = new SheetDataConfig(1, sheetDataRange);
+
+// 指定多个时间坐标和格式化
+ExcelDateTypeConfig edtc = new ExcelDateTypeConfig(
+        new int[][]{{4,7}, {5,6}, {5,7}}, "yyyy-MM-dd HH:mm:ss");
+sheetDataConfig.addExcelDateTypeConfig(edtc);
+config.addSheetDataConfig(sheetDataConfig);
+// 根据配置创建转换器
+MapConverter mc = Any2Map.createMapConverter(config);
+// 输出结果
+Map<String, Object> map = mc.toMap();
+```
+
+如下Excel：
+
+![image-20250327142313992](./README.assets/image-20250327142313992.png)
+
+输出结果：
+
+```json
+{
+  "S3": [
+    {
+      "A": {
+        "a": "AaBb1"
+      },
+      "B": {
+        "b1": "AaBb1",
+        "b2": "Bb2"
+      },
+      "C": {
+        "c1": 0.0,
+        "c2": "Cc2c3",
+        "c3d1": "Cc2c3"
+      },
+      "D": {
+        "c3d1": null
+      }
+    },
+    {
+      "A": {
+        "a": 12.0
+      },
+      "B": {
+        "b1": 1300.0,
+        "b2": "Bb2"
+      },
+      "C": {
+        "c1": -1288.0,
+        "c2": "Cc2c3",
+        "c3d1": "Cc2c3"
+      },
+      "D": {
+        "c3d1": "2022-12-22 00:00:00"
+      }
+    },
+    {
+      "A": {
+        "a": true
+      },
+      "B": {
+        "b1": false,
+        "b2": "Bb2Cc1c2"
+      },
+      "C": {
+        "c1": "Bb2Cc1c2",
+        "c2": "Bb2Cc1c2",
+        "c3d1": "2022-12-22 00:00:00"
+      },
+      "D": {
+        "c3d1": "2022-12-22 00:00:00"
+      }
+    }
+  ]
+}
+```
 
 #### Excel转Map再进行分组
 
@@ -98,7 +184,6 @@ Map<String, Object> map = x2ms.toMap();
 
 ### To Do List
 
-- Excel 多级Head实现
 - Excel 分组实现
 
 - 测试事件读取 hssf 和 xssf 的效率，确定最大读取大小。优化60M+文件读取

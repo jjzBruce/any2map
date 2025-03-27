@@ -14,6 +14,7 @@ import java.util.function.BiPredicate;
 
 /**
  * Xlsx To Map
+ * 非默认转换器，谨慎使用！
  *
  * @author <a href="mailto:brucezhang_jjz@163.com">zhangj</a>
  * @since 1.0.0

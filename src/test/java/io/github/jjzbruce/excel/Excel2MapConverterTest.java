@@ -217,6 +217,68 @@ public class Excel2MapConverterTest {
         Assert.assertEquals("2022-12-22 00:00:00", ((Map) m2.get("D")).get("c3d1"));
     }
 
+    @Test
+    public void testXlsxWithGroup() throws JsonProcessingException {
+        String separator = File.separator;
+        String filePath = System.getProperty("user.dir") + separator + "src" + separator + "test" + separator
+                + "resources" + separator + "test.xlsx";
+        ExcelConvertConfig config = new ExcelConvertConfig(filePath);
+        // 指定数据范围，标题行是[1, 3)，数据行从3开始，分组信息范围是[0, 2), 数据列从2开始
+        SheetDataRangeConfig.SheetDataRangeBuilder builder = new SheetDataRangeConfig.SheetDataRangeBuilder();
+        builder.headRowStart(1).headRowEnd(3)
+                .groupColumnStart(0).groupColumnEnd(2)
+                .dataRowStart(3).dataColumnStart(2);
+        SheetDataRangeConfig sheetDataRange = builder.build();
+        // sheet下标为1
+        SheetDataConfig sheetDataConfig = new SheetDataConfig(3, sheetDataRange);
+        config.addSheetDataConfig(sheetDataConfig);
+        MapConverter mc = Any2Map.createMapConverter(config);
+        doTestWithGroup(mc, "S4");
+    }
+
+    // 测试多层Head的情况
+    public void doTestWithGroup(MapConverter mc, String sheetName) throws JsonProcessingException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        String configJson = objectMapper.writeValueAsString(mc.getConvertConfig());
+        System.out.println("===== 配置 =====");
+        System.out.println(configJson);
+        System.out.println("===== 配置 =====");
+        Map<String, Object> map = mc.toMap();
+        String json = objectMapper.writeValueAsString(map);
+        System.out.println(json);
+
+        Assert.assertTrue(map.containsKey(sheetName));
+        Map sheetMap = (Map) map.get(sheetName);
+        Assert.assertEquals(2, sheetMap.size());
+
+        Map<String, Object> sheetMapG1 = (Map<String, Object>) sheetMap.get("分组1");
+        Assert.assertEquals(2, sheetMapG1.size());
+
+        Map<String, Object> sheetMapG11 = (Map<String, Object>) sheetMapG1.get("甲");
+        Assert.assertEquals("AaBb1", ((Map) sheetMapG11.get("A")).get("a"));
+        Assert.assertEquals("AaBb1", ((Map) sheetMapG11.get("B")).get("b1"));
+        Assert.assertEquals("Bb2", ((Map) sheetMapG11.get("B")).get("b2"));
+        Assert.assertTrue(Objects.equals("-", ((Map) sheetMapG11.get("C")).get("c1")) ||
+                Objects.equals(0D, ((Map) sheetMapG11.get("C")).get("c1")));
+        Assert.assertEquals("Cc2c3", ((Map) sheetMapG11.get("C")).get("c2"));
+
+        Map<String, Object> sheetMapG12 = (Map<String, Object>) sheetMapG1.get("4");
+        Assert.assertEquals(12D, ((Map) sheetMapG12.get("A")).get("a"));
+        Assert.assertEquals(1300D, ((Map) sheetMapG12.get("B")).get("b1"));
+        Assert.assertEquals("Bb2", ((Map) sheetMapG12.get("B")).get("b2"));
+        Assert.assertTrue(Objects.equals(-1288D, ((Map) sheetMapG12.get("C")).get("c1")));
+        Assert.assertEquals("Cc2c3", ((Map) sheetMapG12.get("C")).get("c2"));
+
+        Map<String, Object> sheetMapG2 = (Map<String, Object>) sheetMap.get("分组2");
+        Assert.assertEquals(1, sheetMapG2.size());
+        Map<String, Object> sheetMapG21 = (Map<String, Object>) sheetMapG2.get("乙");
+        Assert.assertEquals(true, ((Map) sheetMapG21.get("A")).get("a"));
+        Assert.assertEquals(false, ((Map) sheetMapG21.get("B")).get("b1"));
+        Assert.assertEquals("Bb2Cc1c2", ((Map) sheetMapG21.get("B")).get("b2"));
+        Assert.assertTrue(Objects.equals("Bb2Cc1c2", ((Map) sheetMapG21.get("C")).get("c1")));
+        Assert.assertEquals("Bb2Cc1c2", ((Map) sheetMapG21.get("C")).get("c2"));
+    }
+
 
 //    @Test
 //    public void testReadBigXlsx() {

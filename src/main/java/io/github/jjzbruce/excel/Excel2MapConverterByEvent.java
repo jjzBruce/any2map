@@ -96,7 +96,7 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
                             mapList.add(lineMap);
                         }
                     }
-                    map.put(sheetNames.get(index), mapList);
+                    map.put(sheetNames.get(index), setGroupIfExist(mapList));
                 }
             }
             if (log.isDebugEnabled()) {
@@ -132,13 +132,12 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
                 if (sheetDataConfig != null) {
                     init(sheetIndex);
                     List<Map<String, Object>> mapList = new ArrayList<>();
-                    map.put(sheetName, mapList);
+
                     InputSource sheetSource = new InputSource(sheet);
                     XssfDataHandler handler = new XssfDataHandler(sst, sheetDataConfig);
                     parser.setContentHandler(handler);
                     parser.parse(sheetSource);
                     sheet.close();
-
                     List<Object[]> listArray = handler.getListArray();
                     for (int i = 0; i < listArray.size(); i++) {
                         SheetDataRangeConfig sheetDataRange = sheetDataConfig.getSheetDataRange();
@@ -154,7 +153,7 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
                             mapList.add(lineMap);
                         }
                     }
-
+                    map.put(sheetName, setGroupIfExist(mapList));
                     if (log.isTraceEnabled()) {
                         log.trace("解析Excel Sheet[{}] 耗时: [{}] 数据: {}", sheetName, System.currentTimeMillis() - sheetStart,
                                 handler.getListArray());
@@ -392,6 +391,9 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
                 // 算出当前坐标
                 Object mergeValue = listArray.get(firstRowNum)[firstColNum];
                 for (int i = firstRowNum; i <= lastRowNum; i++) {
+                    if(listArray.get(i).length < colLength) {
+                        listArray.set(i, Arrays.copyOf(listArray.get(i), colLength));
+                    }
                     for (int j = firstColNum; j <= lastColNum; j++) {
                         listArray.get(i)[j] = mergeValue;
                     }

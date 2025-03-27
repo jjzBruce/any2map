@@ -8,15 +8,35 @@ package io.github.jjzbruce.excel;
  */
 public class SheetDataRangeConfig {
 
+    /**
+     * 标题
+     */
     private Integer headRowStart = 0;
     private Integer headRowEnd = headRowStart + 1;
 
+    /**
+     * 分组
+     */
+    private Integer groupColumnStart = 0;
+    private Integer groupColumnEnd = 0;
+
+    /**
+     * 数据
+     */
     private Integer dataRowStart = 1;
     private Integer dataRowEnd = Integer.MAX_VALUE;
     private Integer dataColumnStart = 0;
     private Integer dataColumnEnd = Integer.MAX_VALUE;
 
     public SheetDataRangeConfig() {
+    }
+
+    public Integer getGroupColumnStart() {
+        return groupColumnStart;
+    }
+
+    public Integer getGroupColumnEnd() {
+        return groupColumnEnd;
     }
 
     public Integer getDataRowStart() {
@@ -85,6 +105,16 @@ public class SheetDataRangeConfig {
 
         public SheetDataRangeBuilder headRowEnd(Integer headRowEnd) {
             sheetDataRange.headRowEnd = headRowEnd;
+            return this;
+        }
+
+        public SheetDataRangeBuilder groupColumnStart(Integer groupColumnStart) {
+            sheetDataRange.groupColumnStart = groupColumnStart;
+            return this;
+        }
+
+        public SheetDataRangeBuilder groupColumnEnd(Integer groupColumnEnd) {
+            sheetDataRange.groupColumnEnd = groupColumnEnd;
             return this;
         }
 

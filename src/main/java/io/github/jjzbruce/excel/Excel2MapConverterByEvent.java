@@ -324,7 +324,12 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
                             Object mergeValue = listArray.get(areaAt.getFirstRow())[areaAt.getFirstColumn()];
                             for (int j = areaAt.getFirstRow(); j <= areaAt.getLastRow(); j++) {
                                 for (int k = areaAt.getFirstColumn(); k <= areaAt.getLastColumn(); k++) {
-                                    listArray.get(j)[k] = mergeValue;
+                                    Object[] lines = listArray.get(j);
+                                    if (lines.length < colLength) {
+                                        lines = Arrays.copyOf(lines, colLength);
+                                        listArray.set(i, lines);
+                                    }
+                                    lines[k] = mergeValue;
                                 }
                             }
                         }

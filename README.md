@@ -174,17 +174,104 @@ Map<String, Object> map = mc.toMap();
 
 #### Excel转Map再进行分组
 
+```java
+String filePath = "path/to/your/file.xlsx";
+// 创建转换配置
+ExcelConvertConfig config = new ExcelConvertConfig(filePath);
 
+// 指定数据范围，标题行是[1, 3)，数据行从3开始，分组信息范围是[0, 2), 数据列从2开始
+SheetDataRangeConfig.SheetDataRangeBuilder builder = new SheetDataRangeConfig.SheetDataRangeBuilder();
+builder.headRowStart(1).headRowEnd(3)
+        .groupColumnStart(0).groupColumnEnd(2)
+        .dataRowStart(3).dataColumnStart(2);
+SheetDataRangeConfig sheetDataRange = builder.build();
 
+// sheet下标为3
+SheetDataConfig sheetDataConfig = new SheetDataConfig(3, sheetDataRange);
+config.addSheetDataConfig(sheetDataConfig);
 
+// 根据配置创建转换器
+MapConverter mc = Any2Map.createMapConverter(config);
+// 输出结果
+Map<String, Object> map = mc.toMap();
+```
+
+如下Excel：
+
+![image-20250402164522746](./README.assets/image-20250402164522746.png)
+
+输出结果：
+
+```json
+{
+    "S4":
+    {
+        "分组1":
+        {
+            "甲":
+            {
+                "A":
+                {
+                    "a": "AaBb1"
+                },
+                "B":
+                {
+                    "b1": "AaBb1",
+                    "b2": "Bb2"
+                },
+                "C":
+                {
+                    "c1": 0.0,
+                    "c2": "Cc2c3"
+                }
+            },
+            "4":
+            {
+                "A":
+                {
+                    "a": 12.0
+                },
+                "B":
+                {
+                    "b1": 1300.0,
+                    "b2": "Bb2"
+                },
+                "C":
+                {
+                    "c1": -1288.0,
+                    "c2": "Cc2c3"
+                }
+            }
+        },
+        "分组2":
+        {
+            "乙":
+            {
+                "A":
+                {
+                    "a": true
+                },
+                "B":
+                {
+                    "b1": false,
+                    "b2": "Bb2Cc1c2"
+                },
+                "C":
+                {
+                    "c1": "Bb2Cc1c2",
+                    "c2": "Bb2Cc1c2"
+                }
+            }
+        }
+    }
+}
+```
 
 
 
 
 
 ### To Do List
-
-- Excel 分组实现
 
 - 测试事件读取 hssf 和 xssf 的效率，确定最大读取大小。优化60M+文件读取
 - Mongo 数据转Map实现

@@ -229,7 +229,26 @@ public class Excel2MapConverterTest {
                 .groupColumnStart(0).groupColumnEnd(2)
                 .dataRowStart(3).dataColumnStart(2);
         SheetDataRangeConfig sheetDataRange = builder.build();
-        // sheet下标为1
+        // sheet下标为3
+        SheetDataConfig sheetDataConfig = new SheetDataConfig(3, sheetDataRange);
+        config.addSheetDataConfig(sheetDataConfig);
+        MapConverter mc = Any2Map.createMapConverter(config);
+        doTestWithGroup(mc, "S4");
+    }
+
+    @Test
+    public void testXlsWithGroup() throws JsonProcessingException {
+        String separator = File.separator;
+        String filePath = System.getProperty("user.dir") + separator + "src" + separator + "test" + separator
+                + "resources" + separator + "test.xls";
+        ExcelConvertConfig config = new ExcelConvertConfig(filePath);
+        // 指定数据范围，标题行是[1, 3)，数据行从3开始，分组信息范围是[0, 2), 数据列从2开始
+        SheetDataRangeConfig.SheetDataRangeBuilder builder = new SheetDataRangeConfig.SheetDataRangeBuilder();
+        builder.headRowStart(1).headRowEnd(3)
+                .groupColumnStart(0).groupColumnEnd(2)
+                .dataRowStart(3).dataColumnStart(2);
+        SheetDataRangeConfig sheetDataRange = builder.build();
+        // sheet下标为3
         SheetDataConfig sheetDataConfig = new SheetDataConfig(3, sheetDataRange);
         config.addSheetDataConfig(sheetDataConfig);
         MapConverter mc = Any2Map.createMapConverter(config);

@@ -10,6 +10,7 @@
 
     <name>any2map:${project.version}</name>
     <description>convert any data to map</description>
+    <url>https://github.com/jjzbruce/any2map</url>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
@@ -117,6 +118,41 @@
         </repository>
     </repositories>
 
+    <developers>
+        <developer>
+            <id>github</id>
+            <name>Bruce Zhang</name>
+            <email>brucezhang_jjz@163.com</email>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:git@github.com:jjzbruce/any2map.git</connection>
+        <developerConnection>scm:git:git@github.com:jjzbruce/any2map.git</developerConnection>
+        <url>https://github.com/jjzbruce/any2map</url>
+    </scm>
+
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE - 2.0</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <distributionManagement>
+        <repository>
+            <id>github</id>
+            <name>any2map</name>
+            <url>https://maven.pkg.github.com/QEWOOuJW/any2map</url>
+        </repository>
+        <snapshotRepository>
+            <id>github</id>
+            <name>any2map</name>
+            <url>https://maven.pkg.github.com/QEWOOuJW/any2map</url>
+        </snapshotRepository>
+    </distributionManagement>
+
     <build>
         <plugins>
             <plugin>
@@ -151,6 +187,14 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
                 <version>${maven-javadoc-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
                 <configuration>
                     <additionalOptions>
                         <additionalOption>-Xdoclint:none</additionalOption>
@@ -163,8 +207,22 @@
                 <version>0.7.0</version>
                 <extensions>true</extensions>
                 <configuration>
-                    <publishingServerId>central</publishingServerId>
+                    <publishingServerId>github</publishingServerId>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <version>1.6</version>
+                <executions>
+                    <execution>
+                        <id>sign-artifacts</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>sign</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
@@ -195,15 +253,6 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-compiler-plugin</artifactId>
                         <version>${maven-compiler-plugin.version}</version>
-                        <configuration>
-                            <annotationProcessorPaths>
-                                <path>
-                                    <groupId>org.projectlombok</groupId>
-                                    <artifactId>lombok</artifactId>
-                                    <version>${lombok.version}</version>
-                                </path>
-                            </annotationProcessorPaths>
-                        </configuration>
                     </plugin>
                 </plugins>
             </build>
@@ -223,15 +272,6 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-compiler-plugin</artifactId>
                         <version>${maven-compiler-plugin.version}</version>
-                        <configuration>
-                            <annotationProcessorPaths>
-                                <path>
-                                    <groupId>org.projectlombok</groupId>
-                                    <artifactId>lombok</artifactId>
-                                    <version>${lombok.version}</version>
-                                </path>
-                            </annotationProcessorPaths>
-                        </configuration>
                     </plugin>
                 </plugins>
             </build>

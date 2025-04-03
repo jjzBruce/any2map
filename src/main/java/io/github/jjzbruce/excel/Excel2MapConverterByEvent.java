@@ -216,7 +216,7 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
             listArrayMap.put(sheetIndex, listArray);
         }
 
-        public void processRecord(Record record) {
+        public void processRecord(org.apache.poi.hssf.record.Record record) {
             short sid = record.getSid();
             switch (sid) {
                 // the BOFRecord can represent either the beginning of a sheet or the workbook

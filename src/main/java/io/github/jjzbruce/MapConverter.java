@@ -10,8 +10,21 @@ import java.util.Map;
  */
 public interface MapConverter<T extends ConvertConfig> {
 
+    /**
+     * 配置
+     */
     T getConvertConfig();
 
-    Map<String, Object> toMap();
+    /**
+     * 输出结果
+     */
+    default Map<String, Object> toMap() {
+        return toMapData().getData();
+    }
+
+    /**
+     * 输出结果
+     */
+    DataMapWrapper toMapData();
 
 }

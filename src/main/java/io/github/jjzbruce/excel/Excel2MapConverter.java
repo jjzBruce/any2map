@@ -1,5 +1,6 @@
 package io.github.jjzbruce.excel;
 
+import io.github.jjzbruce.DataMapWrapper;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.slf4j.Logger;
@@ -26,8 +27,13 @@ public class Excel2MapConverter extends AbstractExcelMapConverter {
         super(config);
     }
 
+    /**
+     * toMapData
+     * @since 1.0.1
+     * @return DataMapWrapper
+     */
     @Override
-    public Map<String, Object> toMap() {
+    public DataMapWrapper toMapData() {
         Object source = config.getSource();
         Objects.nonNull(source);
         long start = System.currentTimeMillis();
@@ -82,7 +88,7 @@ public class Excel2MapConverter extends AbstractExcelMapConverter {
         if (log.isTraceEnabled()) {
             log.trace("输出Map数据耗时: {}", System.currentTimeMillis() - prepare);
         }
-        return map;
+        return new DataMapWrapper(this.excelHead, map);
     }
 
     public void convertSheetData(Sheet sheet, SheetDataRangeConfig sheetDataRange, FormulaEvaluator evaluator, Integer headRowStart,
@@ -198,7 +204,6 @@ public class Excel2MapConverter extends AbstractExcelMapConverter {
                     default:
                         return null;
                 }
-//                return cell.getStringCellValue();
             case _NONE:
                 return null;
             case BLANK:

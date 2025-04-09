@@ -3,7 +3,9 @@ package io.github.jjzbruce.excel;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.jjzbruce.Any2Map;
+import io.github.jjzbruce.DataMapWrapper;
 import io.github.jjzbruce.MapConverter;
+import io.github.jjzbruce.MapHeaders;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.streaming.SXSSFRow;
 import org.apache.poi.xssf.streaming.SXSSFSheet;
@@ -89,7 +91,13 @@ public class Excel2MapConverterTest {
         System.out.println("===== 配置 =====");
         System.out.println(configJson);
         System.out.println("===== 配置 =====");
-        Map<String, Object> map = mc.toMap();
+        DataMapWrapper dmw = mc.toMapData();
+        System.out.println("===== 数据头 =====");
+        MapHeaders headers = dmw.getHeaders();
+        String headersJson = objectMapper.writeValueAsString(headers.getHeaders());
+        System.out.println(headersJson);
+        System.out.println("===== 数据头 =====");
+        Map<String, Object> map = dmw.getData();
         String json = objectMapper.writeValueAsString(map);
         System.out.println(json);
 

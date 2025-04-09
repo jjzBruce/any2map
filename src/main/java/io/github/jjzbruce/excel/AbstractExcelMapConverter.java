@@ -1,6 +1,7 @@
 package io.github.jjzbruce.excel;
 
 import io.github.jjzbruce.MapConverter;
+import io.github.jjzbruce.MapHeader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -97,11 +98,11 @@ public abstract class AbstractExcelMapConverter implements MapConverter<ExcelCon
             for (int i = 0; i < mapList.size(); i++) {
                 int offsetRowNum = i + excelGroup.getBeginRowNum();
                 String[] groups = excelGroup.getGroups(offsetRowNum);
-                if(log.isTraceEnabled()) {
+                if (log.isTraceEnabled()) {
                     log.trace("分组信息: {}", Arrays.stream(groups).collect(Collectors.joining(",")));
                 }
-                Map<String, Object> tmp ;
-                if(groupMap.containsKey(groups[0])) {
+                Map<String, Object> tmp;
+                if (groupMap.containsKey(groups[0])) {
                     tmp = (Map<String, Object>) groupMap.get(groups[0]);
                 } else {
                     tmp = new LinkedHashMap<>();
@@ -137,10 +138,24 @@ public abstract class AbstractExcelMapConverter implements MapConverter<ExcelCon
                 if (childMap == null) {
                     childMap = new LinkedHashMap<>();
                     tmp.put(head, childMap);
+                    MapHeader header = excelHead.getHeader(head, i);
+                    if (header == null) {
+                        if (i == 0) {
+                            excelHead.addHeader(MapHeader.ofRoot(head));
+                        } else {
+                            excelHead.addHeader(MapHeader.ofChild(head,
+                                    excelHead.getHeader(heads[i - 1], i - 1)));
+                        }
+                    }
                 }
                 tmp = childMap;
             } else {
                 tmp.put(head, value);
+                if(i == 0) {
+                    excelHead.addHeader(MapHeader.ofLeaf(head, xx));
+                } else {
+                    excelHead.addHeader(MapHeader.ofLeaf(head,  excelHead.getHeader(heads[i - 1], i - 1), xx));
+                }
             }
         }
         if (after != null) {

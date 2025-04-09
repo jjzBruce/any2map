@@ -1,5 +1,8 @@
 package io.github.jjzbruce.excel;
 
+import io.github.jjzbruce.MapHeader;
+import io.github.jjzbruce.MapHeaders;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -11,7 +14,7 @@ import java.util.Map;
  * @author <a href="mailto:brucezhang_jjz@163.com">zhangjun</a>
  * @since 1.0.0
  */
-public class ExcelHead {
+public class ExcelHead extends MapHeaders {
 
     /**
      * 标题开始行号

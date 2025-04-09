@@ -1,5 +1,6 @@
 package io.github.jjzbruce.excel;
 
+import io.github.jjzbruce.DataMapWrapper;
 import org.apache.poi.hssf.eventusermodel.HSSFEventFactory;
 import org.apache.poi.hssf.eventusermodel.HSSFListener;
 import org.apache.poi.hssf.eventusermodel.HSSFRequest;
@@ -47,18 +48,25 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
         super(config);
     }
 
+    /**
+     * toMapData
+     * @since 1.0.1
+     * @return DataMapWrapper
+     */
     @Override
-    public Map<String, Object> toMap() {
+    public DataMapWrapper toMapData() {
+        Map<String, Object> data;
         Object source = config.getSource();
         Objects.nonNull(source);
         String filePath = (String) source;
         if (filePath.endsWith(".xlsx")) {
-            return xlsx2Map(filePath);
+            data = xlsx2Map(filePath);
         } else if (filePath.endsWith(".xls")) {
-            return xls2Map(filePath);
+            data = xls2Map(filePath);
         } else {
             throw new UnsupportedOperationException("不支持的文件格式: " + filePath);
         }
+        return new DataMapWrapper(this.excelHead, data);
     }
 
     private Map<String, Object> xls2Map(String filePath) {
@@ -103,7 +111,7 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
                 log.debug("解析Excel Hssf 耗时: [{}] 数据: {}", System.currentTimeMillis() - start, listArrayMap);
             }
         } catch (Throwable e) {
-            //TODO 合理
+            //TODO 合理解释？
             e.printStackTrace();
         }
         if (log.isDebugEnabled()) {
@@ -132,7 +140,6 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
                 if (sheetDataConfig != null) {
                     init(sheetIndex);
                     List<Map<String, Object>> mapList = new ArrayList<>();
-
                     InputSource sheetSource = new InputSource(sheet);
                     XssfDataHandler handler = new XssfDataHandler(sst, sheetDataConfig);
                     parser.setContentHandler(handler);

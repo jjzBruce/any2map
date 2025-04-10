@@ -78,7 +78,7 @@ public abstract class AbstractExcelMapConverter implements MapConverter<ExcelCon
         if (colNum >= dataColumnStart && colNum < dataColumnEnd) {
             if (rowNum >= headRowStart && rowNum < headRowEnd) {
                 // 添加到标题
-                setHeadTitle(rowNum, colNum, String.valueOf(value));
+                setHeadTitle(rowNum, colNum, value.getValue() + "");
             } else if (rowNum >= dataRowStart && rowNum < dataRowEnd) {
                 // 填充数据
                 setMapData(colNum, value, map, afterSetMapData);
@@ -129,7 +129,12 @@ public abstract class AbstractExcelMapConverter implements MapConverter<ExcelCon
         }
     }
 
-    protected void setMapData(int colNum, ExcelCellValue excelCellValue, Map<String, Object> lineMap, Consumer<ExcelCellValue> after) {
+    protected void setMapData(int colNum, ExcelCellValue excelCellValue, Map<String, Object> lineMap,
+                              Consumer<ExcelCellValue> after) {
+        Set<String> headerSet = new HashSet<>();
+        if(excelCellValue == null) {
+            excelCellValue = new ExcelCellValue(null, null);
+        }
         Object value = excelCellValue.getValue();
         MapKeyType mapKeyType = excelCellValue.getMapKeyType();
         String[] heads = excelHead.getHeads(colNum);
@@ -141,12 +146,11 @@ public abstract class AbstractExcelMapConverter implements MapConverter<ExcelCon
                 if (childMap == null) {
                     childMap = new LinkedHashMap<>();
                     tmp.put(head, childMap);
-                    MapHeader header = excelHead.getHeader(head, i);
-                    if (header == null) {
+                    if (headerSet.add(head)) {
                         if (i == 0) {
-                            excelHead.addUpdateHeader(MapHeader.ofRoot(head));
+                            excelHead.addHead(MapHeader.ofRoot(head));
                         } else {
-                            excelHead.addUpdateHeader(MapHeader.ofChild(head,
+                            excelHead.addHead(MapHeader.ofChild(head,
                                     excelHead.getHeader(heads[i - 1], i - 1)));
                         }
                     }
@@ -154,10 +158,12 @@ public abstract class AbstractExcelMapConverter implements MapConverter<ExcelCon
                 tmp = childMap;
             } else {
                 tmp.put(head, value);
-                if(i == 0) {
-                    excelHead.addUpdateHeader(MapHeader.ofLeaf(head, mapKeyType.name()));
-                } else {
-                    excelHead.addUpdateHeader(MapHeader.ofLeaf(head,  excelHead.getHeader(heads[i - 1], i - 1), mapKeyType.name()));
+                if (mapKeyType != null && headerSet.add(head)) {
+                    if (i == 0) {
+                        excelHead.addHead(MapHeader.ofLeaf(head, mapKeyType.name()));
+                    } else {
+                        excelHead.addHead(MapHeader.ofLeaf(head, excelHead.getHeader(heads[i - 1], i - 1), mapKeyType.name()));
+                    }
                 }
             }
         }

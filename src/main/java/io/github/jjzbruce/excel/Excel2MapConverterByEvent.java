@@ -255,53 +255,46 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
                     int colNum = cr.getColumn();
                     String cellType = null;
                     ExcelCellValue excelCellValue = null;
-                    Object value = null;
                     switch (sid) {
                         case BoolErrRecord.sid:
                             BoolErrRecord brr = (BoolErrRecord) record;
-                            value = brr.getBooleanValue();
                             excelCellValue = new ExcelCellValue( brr.getBooleanValue(), MapKeyType.BOOLEAN);
                             cellType = "BoolErrRecord";
                             break;
                         case FormulaRecord.sid:
                             FormulaRecord fr = (FormulaRecord) record;
-                            value = fr.getValue();
                             excelCellValue = new ExcelCellValue(fr.getValue(), MapKeyType.NUMBER);
                             cellType = "FormulaRecord";
                             break;
                         case LabelSSTRecord.sid:
                             LabelSSTRecord lrec = (LabelSSTRecord) record;
-//                            value = sstrec.getString(lrec.getSSTIndex()).getString();
                             excelCellValue = new ExcelCellValue(sstrec.getString(lrec.getSSTIndex()).getString(), MapKeyType.STRING);
                             cellType = "LabelSSTRecord";
                             break;
                         case NumberRecord.sid:
                             NumberRecord nr = (NumberRecord) record;
-                            value = nr.getValue();
                             excelCellValue = new ExcelCellValue(nr.getValue(), MapKeyType.NUMBER);
                             cellType = "NumberRecord";
 
                             ExcelDateTypeConfig excelDataType = sheetDataConfig.getExcelDataType(rowNum, colNum);
                             if (excelDataType != null) {
                                 try {
-                                    double dateValue = Double.parseDouble(value + "");
+                                    double dateValue = Double.parseDouble(excelCellValue.getValue() + "");
                                     Date date = org.apache.poi.ss.usermodel.DateUtil.getJavaDate(dateValue);
-                                    value = new SimpleDateFormat(excelDataType.getDateFormat()).format(date);
                                     excelCellValue = new ExcelCellValue(new SimpleDateFormat(excelDataType.getDateFormat()).format(date),
                                             MapKeyType.DATE);
                                 } catch (Throwable ignored) {
                                     if (log.isTraceEnabled()) {
-                                        log.trace("数据转为时间错误 ({},{}): {}", rowNum, colNum, value);
+                                        log.trace("数据转为时间错误 ({},{}): {}", rowNum, colNum, excelCellValue.getValue());
                                     }
                                 }
                             } else if (BoolErrRecord.sid != sid && LabelSSTRecord.sid != sid) {
                                 // 尝试当成 数字来处理
                                 try {
-                                    value = Double.parseDouble(value + "");
-                                    excelCellValue = new ExcelCellValue(Double.parseDouble(value + ""), MapKeyType.NUMBER);
+                                    excelCellValue = new ExcelCellValue(Double.parseDouble(excelCellValue.getValue() + ""), MapKeyType.NUMBER);
                                 } catch (Throwable ignored) {
                                     if (log.isTraceEnabled()) {
-                                        log.trace("数据转为数字错误 ({},{}): {}", rowNum, colNum, value);
+                                        log.trace("数据转为数字错误 ({},{}): {}", rowNum, colNum, excelCellValue.getValue());
                                     }
                                 }
                             }
@@ -314,6 +307,11 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
                     if (log.isTraceEnabled()) {
                         log.trace("({},{}) cellType: {}", rowNum, colNum, cellType);
                     }
+
+                    if(excelCellValue == null) {
+                        excelCellValue = new ExcelCellValue(null, null);
+                    }
+
                     // 填充值
                     while (rowNum + 1 > listArray.size()) {
                         listArray.add(new ExcelCellValue[colLength]);
@@ -430,44 +428,37 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
         @Override
         public void endElement(String uri, String localName, String name) throws SAXException {
             if (name.equals("v")) {
-                Object value = lastContents;
                 ExcelCellValue excelCellValue = null;
                 if (cellType != null) {
                     switch (cellType) {
                         case "b":
                             // 布尔值。单元格内的 v 标签的值为 0 或 1，分别代表 false 和 true
-                            value = "1".equals(lastContents);
                             excelCellValue = new ExcelCellValue("1".equals(lastContents), MapKeyType.BOOLEAN);
                             break;
                         case "n":
                             // 数字。可能是整数、小数等。
-                            value = Double.valueOf(lastContents);
-                            excelCellValue = new ExcelCellValue("1".equals(lastContents), MapKeyType.BOOLEAN);
+                            excelCellValue = new ExcelCellValue(Double.valueOf(lastContents), MapKeyType.NUMBER);
                             break;
                         case "s":
                             // 共享字符串（Shared String）。
                             // Excel 会把所有的字符串存储在一个共享字符串表中，每个字符串有一个对应的索引。
                             // 当 cellType 为 s 时，v 标签的值是共享字符串表的索引，你需要通过这个索引从共享字符串表中获取实际的字符串内容。
                             int idx = Integer.parseInt(lastContents);
-                            value = sst.getItemAt(idx).getString();
+                            excelCellValue = new ExcelCellValue(sst.getItemAt(idx).getString(), MapKeyType.STRING);
                             break;
                         case "str":
                             // 公式字符串。v 标签的值就是公式计算得到的字符串结果。f 标签是计算公式
-                            value = lastContents;
+                            excelCellValue = new ExcelCellValue(lastContents, MapKeyType.STRING);
                             break;
                         case "e":
                             // 错误值。v 标签的值是错误代码
-                            value = lastContents;
+                            excelCellValue = new ExcelCellValue(lastContents, MapKeyType.STRING);
                             break;
                         case "d":
                             // 日期。v 标签的值是错误代码
-                            value = lastContents;
+                            excelCellValue = new ExcelCellValue(lastContents, MapKeyType.STRING);
                             break;
                     }
-                }
-
-                if(excelCellValue == null) {
-                    excelCellValue = new ExcelCellValue(lastContents, MapKeyType.STRING);
                 }
 
                 if (!("s").equals(cellType)) {
@@ -477,19 +468,24 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
                         try {
                             double dateValue = Double.parseDouble(lastContents);
                             Date date = org.apache.poi.ss.usermodel.DateUtil.getJavaDate(dateValue);
-                            value = new SimpleDateFormat(excelDataType.getDateFormat()).format(date);
+                            excelCellValue = new ExcelCellValue(new SimpleDateFormat(excelDataType.getDateFormat()).format(date), MapKeyType.DATE);
                         } catch (Throwable ignored) {
                             log.debug("数据转为时间错误 ({},{}): {}", currentRowNum, currentColNum, lastContents);
                         }
                     } else if (!("b").equals(cellType) && !("d").equals(cellType)) {
                         // 尝试当成 数字来处理
                         try {
-                            value = Double.parseDouble(lastContents);
+                            excelCellValue = new ExcelCellValue(Double.parseDouble(lastContents), MapKeyType.NUMBER);
                         } catch (Throwable ignored) {
                             log.debug("数据转为数字错误 ({},{}): {}", currentRowNum, currentColNum, lastContents);
                         }
                     }
                 }
+
+                if(excelCellValue == null) {
+                    excelCellValue = new ExcelCellValue(null, null);
+                }
+
                 // 填充值
                 while (currentRowNum + 1 > listArray.size()) {
                     listArray.add(new ExcelCellValue[colLength]);

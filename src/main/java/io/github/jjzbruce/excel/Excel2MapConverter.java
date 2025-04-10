@@ -1,6 +1,7 @@
 package io.github.jjzbruce.excel;
 
 import io.github.jjzbruce.DataMapWrapper;
+import io.github.jjzbruce.MapKeyType;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.slf4j.Logger;
@@ -117,7 +118,7 @@ public class Excel2MapConverter extends AbstractExcelMapConverter {
             if (headRowStart == rowNum) {
                 for (int colNum = 0; colNum < maxCellNum; colNum++) {
                     Cell cell = row.getCell(colNum);
-                    fillData(sheetDataRange, rowNum, colNum, getCellString(evaluator, cell),
+                    fillData(sheetDataRange, rowNum, colNum, getHeaderString(evaluator, cell),
                             null, null);
                 }
             }
@@ -167,17 +168,15 @@ public class Excel2MapConverter extends AbstractExcelMapConverter {
         }
     }
 
-    private ExcelCellValue getCellString(FormulaEvaluator evaluator, Cell cell) {
-        Object cellValue = getCellValue(evaluator, cell);
-        if (cellValue == null) {
-            return null;
-        }
-        if (cellValue instanceof Date) {
-            new ExcelCellValue(new SimpleDateFormat("yyyy-MM-dd").format(cellValue), STRING);
+    private ExcelCellValue getHeaderString(FormulaEvaluator evaluator, Cell cell) {
+        ExcelCellValue cellValue = getCellValue(evaluator, cell);
+        if(cellValue.getMapKeyType().equals(DATE)) {
+            ExcelConvertConfig convertConfig = getConvertConfig();
+            String date = new SimpleDateFormat(convertConfig.getHeaderFormat()).format(cellValue.getValue());
+            return new ExcelCellValue(date, STRING);
         } else {
-            new ExcelCellValue(cellValue.toString(), STRING);
+            return cellValue;
         }
-        return null;
     }
 
     private ExcelCellValue getCellValue(FormulaEvaluator evaluator, Cell cell) {

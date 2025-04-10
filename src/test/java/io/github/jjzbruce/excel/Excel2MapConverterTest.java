@@ -2,10 +2,7 @@ package io.github.jjzbruce.excel;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.github.jjzbruce.Any2Map;
-import io.github.jjzbruce.DataMapWrapper;
-import io.github.jjzbruce.MapConverter;
-import io.github.jjzbruce.MapHeaders;
+import io.github.jjzbruce.*;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.streaming.SXSSFRow;
 import org.apache.poi.xssf.streaming.SXSSFSheet;
@@ -137,7 +134,7 @@ public class Excel2MapConverterTest {
         SheetDataConfig sheetDataConfig = new SheetDataConfig(1, sheetDataRange);
         // 指定多个时间坐标和格式化
         ExcelDateTypeConfig edtc = new ExcelDateTypeConfig(
-                new int[][]{{4,7}, {5,6}, {5,7}}, "yyyy-MM-dd HH:mm:ss");
+                new int[][]{{4, 7}, {5, 6}, {5, 7}}, "yyyy-MM-dd HH:mm:ss");
         sheetDataConfig.addExcelDateTypeConfig(edtc);
         config.addSheetDataConfig(sheetDataConfig);
         MapConverter mc = Any2Map.createMapConverter(config);
@@ -166,7 +163,7 @@ public class Excel2MapConverterTest {
         SheetDataConfig sheetDataConfig = new SheetDataConfig(1, sheetDataRange);
         // 指定多个时间坐标和格式化
         ExcelDateTypeConfig edtc = new ExcelDateTypeConfig(
-                new int[][]{{4,7}, {5,6}, {5,7}}, "yyyy-MM-dd HH:mm:ss");
+                new int[][]{{4, 7}, {5, 6}, {5, 7}}, "yyyy-MM-dd HH:mm:ss");
         sheetDataConfig.addExcelDateTypeConfig(edtc);
         config.addSheetDataConfig(sheetDataConfig);
         MapConverter mc = Any2Map.createMapConverter(config);
@@ -181,6 +178,39 @@ public class Excel2MapConverterTest {
         doTestMultiHead(mc2, "S3");
     }
 
+    public void doTestS2Header(MapHeaders headers) throws JsonProcessingException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        System.out.println("===== 数据头 =====");
+        String headersJson = objectMapper.writeValueAsString(headers.getHeaders());
+        System.out.println(headersJson);
+        System.out.println("===== 数据头 =====");
+
+        MapHeader A = headers.getHeader("A", 0);
+        Assert.assertFalse(A.isLeaf());
+        MapHeader B = headers.getHeader("B", 0);
+        Assert.assertFalse(B.isLeaf());
+        MapHeader C = headers.getHeader("C", 0);
+        Assert.assertFalse(C.isLeaf());
+        MapHeader D = headers.getHeader("D", 0);
+        Assert.assertFalse(D.isLeaf());
+
+        Assert.assertEquals(A, headers.getHeader("a", 1).getParentHeader());
+        Assert.assertEquals(B, headers.getHeader("b1", 1).getParentHeader());
+        Assert.assertEquals(B, headers.getHeader("b2", 1).getParentHeader());
+        Assert.assertEquals(C, headers.getHeader("c1", 1).getParentHeader());
+        Assert.assertEquals(C, headers.getHeader("c2", 1).getParentHeader());
+        Assert.assertEquals(C, headers.getHeader("c3d1", 1).getParentHeader());
+        Assert.assertEquals(D, headers.getHeader("c3d1", 1, 1).getParentHeader());
+    }
+
+    public void doTestS3Header(MapHeaders headers) throws JsonProcessingException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        System.out.println("===== 数据头 =====");
+        String headersJson = objectMapper.writeValueAsString(headers.getHeaders());
+        System.out.println(headersJson);
+        System.out.println("===== 数据头 =====");
+    }
+
     // 测试多层Head的情况
     public void doTestMultiHead(MapConverter mc, String sheetName) throws JsonProcessingException {
         ObjectMapper objectMapper = new ObjectMapper();
@@ -188,7 +218,13 @@ public class Excel2MapConverterTest {
         System.out.println("===== 配置 =====");
         System.out.println(configJson);
         System.out.println("===== 配置 =====");
-        Map<String, Object> map = mc.toMap();
+        DataMapWrapper dmw = mc.toMapData();
+        if(sheetName.equals("S2")) {
+            doTestS2Header(dmw.getHeaders());
+        } else if(sheetName.equals("S3")) {
+            doTestS3Header(dmw.getHeaders());
+        }
+        Map<String, Object> map = dmw.getData();
         String json = objectMapper.writeValueAsString(map);
         System.out.println(json);
 
@@ -270,7 +306,13 @@ public class Excel2MapConverterTest {
         System.out.println("===== 配置 =====");
         System.out.println(configJson);
         System.out.println("===== 配置 =====");
-        Map<String, Object> map = mc.toMap();
+        DataMapWrapper dmw = mc.toMapData();
+        System.out.println("===== 数据头 =====");
+        MapHeaders headers = dmw.getHeaders();
+        String headersJson = objectMapper.writeValueAsString(headers.getHeaders());
+        System.out.println(headersJson);
+        System.out.println("===== 数据头 =====");
+        Map<String, Object> map = dmw.getData();
         String json = objectMapper.writeValueAsString(map);
         System.out.println(json);
 

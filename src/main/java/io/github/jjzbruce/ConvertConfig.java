@@ -10,4 +10,11 @@ public interface ConvertConfig {
 
     Object getSource();
 
+    /**
+     * 标题是日期时间的格式化表示
+     */
+    default String getHeaderFormat() {
+        return "yyyy-MM-dd";
+    }
+
 }

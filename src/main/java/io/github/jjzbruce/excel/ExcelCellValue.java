@@ -26,4 +26,9 @@ public class ExcelCellValue {
     public MapKeyType getMapKeyType() {
         return mapKeyType;
     }
+
+    @Override
+    public String toString() {
+        return "{" + value + ":" + mapKeyType + '}';
+    }
 }

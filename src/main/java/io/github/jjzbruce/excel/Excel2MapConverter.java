@@ -13,6 +13,8 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.function.BiPredicate;
 
+import static io.github.jjzbruce.MapKeyType.*;
+
 /**
  * Xlsx To Map
  * 非默认转换器，谨慎使用！
@@ -100,7 +102,7 @@ public class Excel2MapConverter extends AbstractExcelMapConverter {
         // 最小的有效函数
         int rowStartNum = Math.min(headRowStart, dataRowStart);
         // 缓存跨行夸列的信息，key：坐标(x,y)
-        Map<String, Object> cellMergedValueCache = new HashMap<>();
+        Map<String, ExcelCellValue> cellMergedValueCache = new HashMap<>();
 
         // 提取数据
         row:
@@ -126,7 +128,7 @@ public class Excel2MapConverter extends AbstractExcelMapConverter {
                 for (int colNum = 0; colNum < maxCellNum; colNum++) {
                     Cell cell = row.getCell(colNum);
                     String xy = rowNum + "," + colNum;
-                    Object cellValue;
+                    ExcelCellValue cellValue;
                     if (cellMergedValueCache.containsKey(xy)) {
                         cellValue = cellMergedValueCache.get(xy);
                     } else {
@@ -165,49 +167,50 @@ public class Excel2MapConverter extends AbstractExcelMapConverter {
         }
     }
 
-    private String getCellString(FormulaEvaluator evaluator, Cell cell) {
+    private ExcelCellValue getCellString(FormulaEvaluator evaluator, Cell cell) {
         Object cellValue = getCellValue(evaluator, cell);
         if (cellValue == null) {
             return null;
         }
         if (cellValue instanceof Date) {
-            return new SimpleDateFormat("yyyy-MM-dd").format(cellValue);
+            new ExcelCellValue(new SimpleDateFormat("yyyy-MM-dd").format(cellValue), STRING);
         } else {
-            return cellValue.toString();
+            new ExcelCellValue(cellValue.toString(), STRING);
         }
+        return null;
     }
 
-    private Object getCellValue(FormulaEvaluator evaluator, Cell cell) {
+    private ExcelCellValue getCellValue(FormulaEvaluator evaluator, Cell cell) {
         if (cell == null) {
             return null;
         }
         switch (cell.getCellType()) {
             case STRING:
-                return cell.getStringCellValue();
+                return new ExcelCellValue(cell.getStringCellValue(), STRING);
             case NUMERIC:
                 if (DateUtil.isCellDateFormatted(cell)) {
-                    return cell.getDateCellValue();
+                    return new ExcelCellValue(cell.getDateCellValue(), DATE);
                 } else {
-                    return cell.getNumericCellValue();
+                    return new ExcelCellValue(cell.getNumericCellValue(), NUMBER);
                 }
             case BOOLEAN:
-                return cell.getBooleanCellValue();
+                return new ExcelCellValue(cell.getBooleanCellValue(), BOOLEAN);
             case FORMULA:
                 CellValue evalVal = evaluator.evaluate(cell);
                 switch (evalVal.getCellType()) {
                     case NUMERIC:
-                        return evalVal.getNumberValue();
+                        return new ExcelCellValue(evalVal.getNumberValue(), NUMBER);
                     case STRING:
-                        return evalVal.getStringValue();
+                        return new ExcelCellValue(evalVal.getStringValue(), STRING);
                     case BOOLEAN:
-                        return evalVal.getBooleanValue();
+                        return new ExcelCellValue(evalVal.getBooleanValue(), BOOLEAN);
                     default:
                         return null;
                 }
             case _NONE:
                 return null;
             case BLANK:
-                return "";
+                return new ExcelCellValue("", STRING);
             default:
                 log.error("无法解析的Cell，坐标: ({}, {})， 类型: {}", cell.getRowIndex(), cell.getColumnIndex(), cell.getCellType());
                 return null;

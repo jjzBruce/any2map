@@ -2,6 +2,7 @@ package io.github.jjzbruce.excel;
 
 import io.github.jjzbruce.MapConverter;
 import io.github.jjzbruce.MapHeader;
+import io.github.jjzbruce.MapKeyType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,8 +59,8 @@ public abstract class AbstractExcelMapConverter implements MapConverter<ExcelCon
         this.existGroup = sheetDataRange.getGroupColumnEnd() > sheetDataRange.getGroupColumnStart();
     }
 
-    protected void fillData(SheetDataRangeConfig sheetDataRange, int rowNum, int colNum, Object value,
-                            Map<String, Object> map, Consumer<Object> afterSetMapData) {
+    protected void fillData(SheetDataRangeConfig sheetDataRange, int rowNum, int colNum, ExcelCellValue value,
+                            Map<String, Object> map, Consumer<ExcelCellValue> afterSetMapData) {
         if (sheetDataRange == null) {
             return;
         }
@@ -128,7 +129,9 @@ public abstract class AbstractExcelMapConverter implements MapConverter<ExcelCon
         }
     }
 
-    protected void setMapData(int colNum, Object value, Map<String, Object> lineMap, Consumer<Object> after) {
+    protected void setMapData(int colNum, ExcelCellValue excelCellValue, Map<String, Object> lineMap, Consumer<ExcelCellValue> after) {
+        Object value = excelCellValue.getValue();
+        MapKeyType mapKeyType = excelCellValue.getMapKeyType();
         String[] heads = excelHead.getHeads(colNum);
         Map<String, Object> tmp = lineMap;
         for (int i = 0; i < heads.length; i++) {
@@ -141,9 +144,9 @@ public abstract class AbstractExcelMapConverter implements MapConverter<ExcelCon
                     MapHeader header = excelHead.getHeader(head, i);
                     if (header == null) {
                         if (i == 0) {
-                            excelHead.addHeader(MapHeader.ofRoot(head));
+                            excelHead.addUpdateHeader(MapHeader.ofRoot(head));
                         } else {
-                            excelHead.addHeader(MapHeader.ofChild(head,
+                            excelHead.addUpdateHeader(MapHeader.ofChild(head,
                                     excelHead.getHeader(heads[i - 1], i - 1)));
                         }
                     }
@@ -152,14 +155,14 @@ public abstract class AbstractExcelMapConverter implements MapConverter<ExcelCon
             } else {
                 tmp.put(head, value);
                 if(i == 0) {
-                    excelHead.addHeader(MapHeader.ofLeaf(head, xx));
+                    excelHead.addUpdateHeader(MapHeader.ofLeaf(head, mapKeyType.name()));
                 } else {
-                    excelHead.addHeader(MapHeader.ofLeaf(head,  excelHead.getHeader(heads[i - 1], i - 1), xx));
+                    excelHead.addUpdateHeader(MapHeader.ofLeaf(head,  excelHead.getHeader(heads[i - 1], i - 1), mapKeyType.name()));
                 }
             }
         }
         if (after != null) {
-            after.accept(value);
+            after.accept(excelCellValue);
         }
     }
 

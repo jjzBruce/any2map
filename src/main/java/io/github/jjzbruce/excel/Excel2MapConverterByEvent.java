@@ -1,6 +1,7 @@
 package io.github.jjzbruce.excel;
 
 import io.github.jjzbruce.DataMapWrapper;
+import io.github.jjzbruce.MapKeyType;
 import org.apache.poi.hssf.eventusermodel.HSSFEventFactory;
 import org.apache.poi.hssf.eventusermodel.HSSFListener;
 import org.apache.poi.hssf.eventusermodel.HSSFRequest;
@@ -82,7 +83,7 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
             req.addListenerForAllRecords(hssfDataListener);
             HSSFEventFactory factory = new HSSFEventFactory();
             factory.processEvents(req, din);
-            Map<Integer, List<Object[]>> listArrayMap = hssfDataListener.getListArrayMap();
+            Map<Integer, List<ExcelCellValue[]>> listArrayMap = hssfDataListener.getListArrayMap();
             List<String> sheetNames = hssfDataListener.getSheetNames();
             for (Integer index : sheetDataConfigs.keySet()) {
                 init(index);
@@ -93,10 +94,10 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
                     if (sheetDataRange == null) {
                         sheetDataRange = config.getDefaultDataRange();
                     }
-                    List<Object[]> lineArray = listArrayMap.get(index);
+                    List<ExcelCellValue[]> lineArray = listArrayMap.get(index);
                     for (int i = 0; i < lineArray.size(); i++) {
                         Map<String, Object> lineMap = new LinkedHashMap<>();
-                        Object[] objects = lineArray.get(i);
+                        ExcelCellValue[] objects = lineArray.get(i);
                         for (int j = 0; j < objects.length; j++) {
                             fillData(sheetDataRange, i, j, objects[j], lineMap, null);
                         }
@@ -145,14 +146,14 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
                     parser.setContentHandler(handler);
                     parser.parse(sheetSource);
                     sheet.close();
-                    List<Object[]> listArray = handler.getListArray();
+                    List<ExcelCellValue[]> listArray = handler.getListArray();
                     for (int i = 0; i < listArray.size(); i++) {
                         SheetDataRangeConfig sheetDataRange = sheetDataConfig.getSheetDataRange();
                         if (sheetDataRange == null) {
                             sheetDataRange = config.getDefaultDataRange();
                         }
                         Map<String, Object> lineMap = new LinkedHashMap<>();
-                        Object[] objects = listArray.get(i);
+                        ExcelCellValue[] objects = listArray.get(i);
                         for (int j = 0; j < objects.length; j++) {
                             fillData(sheetDataRange, i, j, objects[j], lineMap, null);
                         }
@@ -194,8 +195,8 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
          * 当 sheet name 加载之前， 该值会更新为 -1。获取所有的 sheet name 之后，在数据加载之前，值会更新为 0
          */
         private int sheetIndex = -2;
-        private Map<Integer, List<Object[]>> listArrayMap = new HashMap<>();
-        private List<Object[]> listArray = null;
+        private Map<Integer, List<ExcelCellValue[]>> listArrayMap = new HashMap<>();
+        private List<ExcelCellValue[]> listArray = null;
         /**
          * 列长
          */
@@ -213,7 +214,7 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
             this.sheetDataConfigs = sheetDataConfigs;
         }
 
-        public Map<Integer, List<Object[]>> getListArrayMap() {
+        public Map<Integer, List<ExcelCellValue[]>> getListArrayMap() {
             return listArrayMap;
         }
 
@@ -253,26 +254,31 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
                     int rowNum = cr.getRow();
                     int colNum = cr.getColumn();
                     String cellType = null;
+                    ExcelCellValue excelCellValue = null;
                     Object value = null;
                     switch (sid) {
                         case BoolErrRecord.sid:
                             BoolErrRecord brr = (BoolErrRecord) record;
                             value = brr.getBooleanValue();
+                            excelCellValue = new ExcelCellValue( brr.getBooleanValue(), MapKeyType.BOOLEAN);
                             cellType = "BoolErrRecord";
                             break;
                         case FormulaRecord.sid:
                             FormulaRecord fr = (FormulaRecord) record;
                             value = fr.getValue();
+                            excelCellValue = new ExcelCellValue(fr.getValue(), MapKeyType.NUMBER);
                             cellType = "FormulaRecord";
                             break;
                         case LabelSSTRecord.sid:
                             LabelSSTRecord lrec = (LabelSSTRecord) record;
-                            value = sstrec.getString(lrec.getSSTIndex()).getString();
+//                            value = sstrec.getString(lrec.getSSTIndex()).getString();
+                            excelCellValue = new ExcelCellValue(sstrec.getString(lrec.getSSTIndex()).getString(), MapKeyType.STRING);
                             cellType = "LabelSSTRecord";
                             break;
                         case NumberRecord.sid:
                             NumberRecord nr = (NumberRecord) record;
                             value = nr.getValue();
+                            excelCellValue = new ExcelCellValue(nr.getValue(), MapKeyType.NUMBER);
                             cellType = "NumberRecord";
 
                             ExcelDateTypeConfig excelDataType = sheetDataConfig.getExcelDataType(rowNum, colNum);
@@ -281,6 +287,8 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
                                     double dateValue = Double.parseDouble(value + "");
                                     Date date = org.apache.poi.ss.usermodel.DateUtil.getJavaDate(dateValue);
                                     value = new SimpleDateFormat(excelDataType.getDateFormat()).format(date);
+                                    excelCellValue = new ExcelCellValue(new SimpleDateFormat(excelDataType.getDateFormat()).format(date),
+                                            MapKeyType.DATE);
                                 } catch (Throwable ignored) {
                                     if (log.isTraceEnabled()) {
                                         log.trace("数据转为时间错误 ({},{}): {}", rowNum, colNum, value);
@@ -290,6 +298,7 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
                                 // 尝试当成 数字来处理
                                 try {
                                     value = Double.parseDouble(value + "");
+                                    excelCellValue = new ExcelCellValue(Double.parseDouble(value + ""), MapKeyType.NUMBER);
                                 } catch (Throwable ignored) {
                                     if (log.isTraceEnabled()) {
                                         log.trace("数据转为数字错误 ({},{}): {}", rowNum, colNum, value);
@@ -307,9 +316,9 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
                     }
                     // 填充值
                     while (rowNum + 1 > listArray.size()) {
-                        listArray.add(new Object[colLength]);
+                        listArray.add(new ExcelCellValue[colLength]);
                     }
-                    Object[] lineValues = listArray.get(rowNum);
+                    ExcelCellValue[] lineValues = listArray.get(rowNum);
                     // 更新列长
                     if (colNum >= colLength) {
                         colLength = colNum + 1;
@@ -318,7 +327,7 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
                     if (lineValues.length < colLength) {
                         lineValues = Arrays.copyOf(lineValues, colLength);
                     }
-                    lineValues[colNum] = value;
+                    lineValues[colNum] = excelCellValue;
                     listArray.set(rowNum, lineValues);
                 } else if (record instanceof StandardRecord) {
                     // 处理合并区域
@@ -328,10 +337,10 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
                         for (int i = 0; i < mcr.getNumAreas(); i++) {
                             CellRangeAddress areaAt = mcr.getAreaAt(i);
                             log.debug("sheet下标: {}, 合并区域: {}", sheetIndex, areaAt.formatAsString());
-                            Object mergeValue = listArray.get(areaAt.getFirstRow())[areaAt.getFirstColumn()];
+                            ExcelCellValue mergeValue = listArray.get(areaAt.getFirstRow())[areaAt.getFirstColumn()];
                             for (int j = areaAt.getFirstRow(); j <= areaAt.getLastRow(); j++) {
                                 for (int k = areaAt.getFirstColumn(); k <= areaAt.getLastColumn(); k++) {
-                                    Object[] lines = listArray.get(j);
+                                    ExcelCellValue[] lines = listArray.get(j);
                                     if (lines.length < colLength) {
                                         lines = Arrays.copyOf(lines, colLength);
                                         listArray.set(i, lines);
@@ -358,13 +367,13 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
         private int currentRowNum;
         private int currentColNum;
         private String cellType;
-        private List<Object[]> listArray = new LinkedList<>();
+        private List<ExcelCellValue[]> listArray = new LinkedList<>();
         /**
          * 列长
          */
         private int colLength = 0;
 
-        public List<Object[]> getListArray() {
+        public List<ExcelCellValue[]> getListArray() {
             return listArray;
         }
 
@@ -401,7 +410,7 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
                 int lastColNum = lastCr.getCol();
 
                 // 算出当前坐标
-                Object mergeValue = listArray.get(firstRowNum)[firstColNum];
+                ExcelCellValue mergeValue = listArray.get(firstRowNum)[firstColNum];
                 for (int i = firstRowNum; i <= lastRowNum; i++) {
                     if(listArray.get(i).length < colLength) {
                         listArray.set(i, Arrays.copyOf(listArray.get(i), colLength));
@@ -422,15 +431,18 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
         public void endElement(String uri, String localName, String name) throws SAXException {
             if (name.equals("v")) {
                 Object value = lastContents;
+                ExcelCellValue excelCellValue = null;
                 if (cellType != null) {
                     switch (cellType) {
                         case "b":
                             // 布尔值。单元格内的 v 标签的值为 0 或 1，分别代表 false 和 true
                             value = "1".equals(lastContents);
+                            excelCellValue = new ExcelCellValue("1".equals(lastContents), MapKeyType.BOOLEAN);
                             break;
                         case "n":
                             // 数字。可能是整数、小数等。
                             value = Double.valueOf(lastContents);
+                            excelCellValue = new ExcelCellValue("1".equals(lastContents), MapKeyType.BOOLEAN);
                             break;
                         case "s":
                             // 共享字符串（Shared String）。
@@ -452,6 +464,10 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
                             value = lastContents;
                             break;
                     }
+                }
+
+                if(excelCellValue == null) {
+                    excelCellValue = new ExcelCellValue(lastContents, MapKeyType.STRING);
                 }
 
                 if (!("s").equals(cellType)) {
@@ -476,9 +492,9 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
                 }
                 // 填充值
                 while (currentRowNum + 1 > listArray.size()) {
-                    listArray.add(new Object[colLength]);
+                    listArray.add(new ExcelCellValue[colLength]);
                 }
-                Object[] lineValues = listArray.get(currentRowNum);
+                ExcelCellValue[] lineValues = listArray.get(currentRowNum);
                 // 更新列长
                 if (currentColNum >= colLength) {
                     colLength = currentColNum + 1;
@@ -487,7 +503,7 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
                 if (lineValues.length < colLength) {
                     lineValues = Arrays.copyOf(lineValues, colLength);
                 }
-                lineValues[currentColNum] = value;
+                lineValues[currentColNum] = excelCellValue;
                 listArray.set(currentRowNum, lineValues);
             }
         }

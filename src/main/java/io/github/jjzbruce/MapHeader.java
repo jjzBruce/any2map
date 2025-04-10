@@ -11,7 +11,7 @@ public class MapHeader {
     /**
      * 数据头
      */
-    private String header;
+    private String name;
 
     /**
      * 父键
@@ -34,11 +34,23 @@ public class MapHeader {
     private String[] keyTypes;
 
 
-    public MapHeader(String header, MapHeader parentHeader, int level, boolean leaf, String[] keyTypes) {
-        this.header = header;
+    public MapHeader(String name, MapHeader parentHeader, int level, boolean leaf, String[] keyTypes) {
+        this.name = name;
         this.parentHeader = parentHeader;
         this.level = level;
         this.leaf = leaf;
+        this.keyTypes = keyTypes;
+    }
+
+    public void setParentHeader(MapHeader parentHeader) {
+        this.parentHeader = parentHeader;
+    }
+
+    public void setLeaf(boolean leaf) {
+        this.leaf = leaf;
+    }
+
+    public void setKeyTypes(String[] keyTypes) {
         this.keyTypes = keyTypes;
     }
 
@@ -54,8 +66,8 @@ public class MapHeader {
         return leaf;
     }
 
-    public String getHeader() {
-        return header;
+    public String getName() {
+        return name;
     }
 
     public String[] getKeyTypes() {
@@ -71,12 +83,12 @@ public class MapHeader {
             return false;
         }
         MapHeader other = (MapHeader) obj;
-        return header.equals(other.header) && level == other.level;
+        return name.equals(other.name) && level == other.level;
     }
 
     @Override
     public int hashCode() {
-        int result = header != null ? header.hashCode() : 0;
+        int result = name != null ? name.hashCode() : 0;
         result = 31 * result + level;
         return result;
     }
@@ -89,8 +101,16 @@ public class MapHeader {
         return new MapHeader(header, parentHeader, parentHeader.level + 1, false, null);
     }
 
+    public static MapHeader ofLeaf(String header, MapHeader parentHeader, String keyType) {
+        return new MapHeader(header, parentHeader, parentHeader.level + 1, true, new String[]{keyType});
+    }
+
     public static MapHeader ofLeaf(String header, MapHeader parentHeader, String[] keyTypes) {
         return new MapHeader(header, parentHeader, parentHeader.level + 1, true, keyTypes);
+    }
+
+    public static MapHeader ofLeaf(String header, String keyType) {
+        return new MapHeader(header, null, 0, true, new String[]{keyType});
     }
 
     public static MapHeader ofLeaf(String header, String[] keyTypes) {

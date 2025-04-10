@@ -20,6 +20,10 @@ public enum MapKeyType {
      */
     STRING,
     /**
+     * 布尔类型
+     */
+    BOOLEAN,
+    /**
      * 日期时间
      */
     DATE

@@ -14,4 +14,6 @@ public interface MapConverter<T extends ConvertConfig> {
 
     Map<String, Object> toMap();
 
+
+
 }

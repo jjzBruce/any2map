@@ -85,7 +85,11 @@ public abstract class AbstractExcelMapConverter implements MapConverter<ExcelCon
             }
         } else if (rowNum >= dataRowStart && colNum >= groupColumnStart && colNum < groupColumnEnd) {
             // 命中分组和设置分组信息
-            excelGroup.setGroups(rowNum, colNum, String.valueOf(value));
+            String groupValue = null;
+            if(value != null) {
+                groupValue = value.getStringValue();
+            }
+            excelGroup.setGroups(rowNum, colNum, groupValue);
         }
     }
 
@@ -94,7 +98,6 @@ public abstract class AbstractExcelMapConverter implements MapConverter<ExcelCon
      */
     protected Object setGroupIfExist(List<Map<String, Object>> mapList) {
         if (this.existGroup) {
-
             Map<String, Object> groupMap = new LinkedHashMap<>();
             for (int i = 0; i < mapList.size(); i++) {
                 int offsetRowNum = i + excelGroup.getBeginRowNum();

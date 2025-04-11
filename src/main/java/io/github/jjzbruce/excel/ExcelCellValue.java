@@ -23,6 +23,13 @@ public class ExcelCellValue {
         return value;
     }
 
+    public String getStringValue() {
+        if(value == null) {
+            return null;
+        }
+        return value + "";
+    }
+
     public MapKeyType getMapKeyType() {
         return mapKeyType;
     }

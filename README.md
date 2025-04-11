@@ -7,6 +7,7 @@
 - Excel 转 Map
   - 支持多级标题
   - 支持横向分组
+  - 获取数据头
 
 
 ## 准备
@@ -15,7 +16,7 @@
 <dependency>
     <groupId>com.modern.tools</groupId>
     <artifactId>any2map</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
 </dependency>
 ```
 
@@ -39,13 +40,65 @@ sheetDataConfig.addExcelDateTypeConfig(edtc);
 config.addSheetDataConfig(sheetDataConfig);
 // 根据配置创建转换器
 MapConverter mc = Any2Map.createMapConverter(config2);
+DataMapWrapper dmw = mc.toMapData();
+// 数据头
+MapHeaders headers = dmw.getHeaders();
 // 输出结果
-Map<String, Object> map = mc.toMap();
+Map<String, Object> map = dmw.getData();
 ```
 
 如下Excel：
 
 <img src="./README.assets/image-20250324165642622.png" alt="image-20250324165642622" style="zoom:67%;" />
+
+数据头：
+
+```json
+[
+    {
+        "name": "A",
+        "parentHeader": null,
+        "level": 0,
+        "leaf": true,
+        "keyType": "STRING"
+    },
+    {
+        "name": "B",
+        "parentHeader": null,
+        "level": 0,
+        "leaf": true,
+        "keyType": "STRING"
+    },
+    {
+        "name": "C",
+        "parentHeader": null,
+        "level": 0,
+        "leaf": true,
+        "keyType": "STRING"
+    },
+    {
+        "name": "D",
+        "parentHeader": null,
+        "level": 0,
+        "leaf": true,
+        "keyType": "STRING"
+    },
+    {
+        "name": "E",
+        "parentHeader": null,
+        "level": 0,
+        "leaf": true,
+        "keyType": "STRING"
+    },
+    {
+        "name": "2000-01-11",
+        "parentHeader": null,
+        "level": 0,
+        "leaf": true,
+        "keyType": "STRING"
+    }
+]
+```
 
 输出结果：
 
@@ -104,13 +157,150 @@ sheetDataConfig.addExcelDateTypeConfig(edtc);
 config.addSheetDataConfig(sheetDataConfig);
 // 根据配置创建转换器
 MapConverter mc = Any2Map.createMapConverter(config);
+DataMapWrapper dmw = mc.toMapData();
+// 数据头
+MapHeaders headers = dmw.getHeaders();
 // 输出结果
-Map<String, Object> map = mc.toMap();
+Map<String, Object> map = dmw.getData();
+
 ```
 
 如下Excel：
 
 ![image-20250327142313992](./README.assets/image-20250327142313992.png)
+
+数据头
+
+```json
+[
+    {
+        "name": "A",
+        "parentHeader": null,
+        "level": 0,
+        "leaf": false,
+        "keyType": null
+    },
+    {
+        "name": "a",
+        "parentHeader":
+        {
+            "name": "A",
+            "parentHeader": null,
+            "level": 0,
+            "leaf": false,
+            "keyType": null
+        },
+        "level": 1,
+        "leaf": true,
+        "keyType": "STRING"
+    },
+    {
+        "name": "B",
+        "parentHeader": null,
+        "level": 0,
+        "leaf": false,
+        "keyType": null
+    },
+    {
+        "name": "b1",
+        "parentHeader":
+        {
+            "name": "B",
+            "parentHeader": null,
+            "level": 0,
+            "leaf": false,
+            "keyType": null
+        },
+        "level": 1,
+        "leaf": true,
+        "keyType": "STRING"
+    },
+    {
+        "name": "b2",
+        "parentHeader":
+        {
+            "name": "B",
+            "parentHeader": null,
+            "level": 0,
+            "leaf": false,
+            "keyType": null
+        },
+        "level": 1,
+        "leaf": true,
+        "keyType": "STRING"
+    },
+    {
+        "name": "C",
+        "parentHeader": null,
+        "level": 0,
+        "leaf": false,
+        "keyType": null
+    },
+    {
+        "name": "c1",
+        "parentHeader":
+        {
+            "name": "C",
+            "parentHeader": null,
+            "level": 0,
+            "leaf": false,
+            "keyType": null
+        },
+        "level": 1,
+        "leaf": true,
+        "keyType": "STRING"
+    },
+    {
+        "name": "c2",
+        "parentHeader":
+        {
+            "name": "C",
+            "parentHeader": null,
+            "level": 0,
+            "leaf": false,
+            "keyType": null
+        },
+        "level": 1,
+        "leaf": true,
+        "keyType": "STRING"
+    },
+    {
+        "name": "c3d1",
+        "parentHeader":
+        {
+            "name": "C",
+            "parentHeader": null,
+            "level": 0,
+            "leaf": false,
+            "keyType": null
+        },
+        "level": 1,
+        "leaf": true,
+        "keyType": "STRING"
+    },
+    {
+        "name": "D",
+        "parentHeader": null,
+        "level": 0,
+        "leaf": false,
+        "keyType": null
+    },
+    {
+        "name": "c3d1",
+        "parentHeader":
+        {
+            "name": "D",
+            "parentHeader": null,
+            "level": 0,
+            "leaf": false,
+            "keyType": null
+        },
+        "level": 1,
+        "leaf": true,
+        "keyType": "DATE"
+    }
+]
+```
 
 输出结果：
 
@@ -200,6 +390,104 @@ Map<String, Object> map = mc.toMap();
 
 ![image-20250402164522746](./README.assets/image-20250402164522746.png)
 
+数据头：
+
+```json
+[
+    {
+        "name": "A",
+        "parentHeader": null,
+        "level": 0,
+        "leaf": false,
+        "keyType": null
+    },
+    {
+        "name": "a",
+        "parentHeader":
+        {
+            "name": "A",
+            "parentHeader": null,
+            "level": 0,
+            "leaf": false,
+            "keyType": null
+        },
+        "level": 1,
+        "leaf": true,
+        "keyType": "STRING"
+    },
+    {
+        "name": "B",
+        "parentHeader": null,
+        "level": 0,
+        "leaf": false,
+        "keyType": null
+    },
+    {
+        "name": "b1",
+        "parentHeader":
+        {
+            "name": "B",
+            "parentHeader": null,
+            "level": 0,
+            "leaf": false,
+            "keyType": null
+        },
+        "level": 1,
+        "leaf": true,
+        "keyType": "STRING"
+    },
+    {
+        "name": "b2",
+        "parentHeader":
+        {
+            "name": "B",
+            "parentHeader": null,
+            "level": 0,
+            "leaf": false,
+            "keyType": null
+        },
+        "level": 1,
+        "leaf": true,
+        "keyType": "STRING"
+    },
+    {
+        "name": "C",
+        "parentHeader": null,
+        "level": 0,
+        "leaf": false,
+        "keyType": null
+    },
+    {
+        "name": "c1",
+        "parentHeader":
+        {
+            "name": "C",
+            "parentHeader": null,
+            "level": 0,
+            "leaf": false,
+            "keyType": null
+        },
+        "level": 1,
+        "leaf": true,
+        "keyType": "STRING"
+    },
+    {
+        "name": "c2",
+        "parentHeader":
+        {
+            "name": "C",
+            "parentHeader": null,
+            "level": 0,
+            "leaf": false,
+            "keyType": null
+        },
+        "level": 1,
+        "leaf": true,
+        "keyType": "STRING"
+    }
+]
+```
+
 输出结果：
 
 ```json
@@ -266,8 +554,6 @@ Map<String, Object> map = mc.toMap();
     }
 }
 ```
-
-
 
 
 

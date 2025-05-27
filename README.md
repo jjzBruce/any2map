@@ -13,10 +13,19 @@
 
 ```xml
 <dependency>
-    <groupId>com.modern.tools</groupId>
+    <groupId>io.github.jjzbruce</groupId>
     <artifactId>any2map</artifactId>
     <version>1.0.0</version>
 </dependency>
+
+
+<repositories>
+    <repository>
+        <id>central</id>
+        <name>Central Repository</name>
+        <url>https://repo.maven.apache.org/maven2</url>
+    </repository>
+</repositories>
 ```
 
 ## 快速开始

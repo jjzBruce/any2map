@@ -1,12 +1,14 @@
 package io.github.jjzbruce;
 
 import io.github.jjzbruce.excel.AbstractExcelMapConverter;
+import io.github.jjzbruce.excel.Excel2MapConverterByEvent;
 import io.github.jjzbruce.excel.ExcelConvertConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+//import org.slf4j.Logger;
+//import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Constructor;
 import java.util.Objects;
+import java.util.logging.Logger;
 
 /**
  * main
@@ -15,7 +17,9 @@ import java.util.Objects;
  * @since 1.0.0
  */
 public class Any2Map {
-    private final static Logger log = LoggerFactory.getLogger(Any2Map.class);
+//    private final static Logger log = LoggerFactory.getLogger(Any2Map.class);
+    private static final Logger log = Logger.getLogger(Any2Map.class.getName());
+
 
     public static MapConverter createMapConverter(ConvertConfig config) {
         Objects.nonNull(config);
@@ -26,7 +30,7 @@ public class Any2Map {
             try {
                 return (MapConverter) constructor.newInstance(config);
             } catch (Throwable e) {
-                log.error("创建 ExcelMapConverter 示例失败", e);
+//                log.error("创建 ExcelMapConverter 示例失败", e);
                 return null;
             }
         } else {

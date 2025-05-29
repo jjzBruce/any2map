@@ -22,8 +22,7 @@ import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.DefaultHandler;
 
-import java.io.FileInputStream;
-import java.io.InputStream;
+import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -56,26 +55,119 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
      */
     @Override
     public DataMapWrapper toMapData() {
-        Map<String, Object> data;
+        Map<String, Object> data = Collections.emptyMap();
         Object source = config.getSource();
         Objects.nonNull(source);
-        String filePath = (String) source;
-        if (filePath.endsWith(".xlsx")) {
-            data = xlsx2Map(filePath);
-        } else if (filePath.endsWith(".xls")) {
-            data = xls2Map(filePath);
+        if(source instanceof String filePath) {
+            if (filePath.endsWith(".xlsx")) {
+                data = xlsx2Map(filePath);
+            } else if (filePath.endsWith(".xls")) {
+                data = xls2Map(filePath);
+            } else {
+                throw new UnsupportedOperationException("不支持的文件格式: " + filePath);
+            }
+        } else if (source instanceof InputStream is) {
+            try {
+                // 使用 BufferedInputStream 支持 mark/reset
+                if (!is.markSupported()) {
+                    is = new BufferedInputStream(is);
+                }
+                // 检测文件格式
+                ExcelFormat format = detectExcelFormat(is);
+                data = switch (format) {
+                    case XLSX -> xlsx2Map(is);
+                    case XLS -> xls2Map(is);
+                    default -> throw new UnsupportedOperationException("不支持的文件格式");
+                };
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         } else {
-            throw new UnsupportedOperationException("不支持的文件格式: " + filePath);
+            throw new UnsupportedOperationException("不支持的数据");
         }
         return new DataMapWrapper(this.excelHead, data);
     }
 
+    /**
+     * 检测 Excel 文件格式
+     * @param input 输入流
+     * @return 文件格式枚举
+     * @throws IOException 读取异常
+     */
+    private ExcelFormat detectExcelFormat(InputStream input) throws IOException {
+        // 标记当前位置，最多读取 8 字节后重置
+        input.mark(8);
+
+        // 读取文件头
+        byte[] header = new byte[8];
+        int bytesRead = input.read(header);
+
+        // 重置流到标记位置
+        input.reset();
+
+        // 文件太短无法判断
+        if (bytesRead < 4) {
+            return ExcelFormat.UNKNOWN;
+        }
+
+        // 检查 XLSX 格式 (PK\x03\x04)
+        if (isXlsxHeader(header)) {
+            return ExcelFormat.XLSX;
+        }
+
+        // 检查 XLS 格式 (D0 CF 11 E0 A1 B1 1A E1)
+        if (bytesRead == 8 && isXlsHeader(header)) {
+            return ExcelFormat.XLS;
+        }
+
+        return ExcelFormat.UNKNOWN;
+    }
+
+    /**
+     * 检查 XLSX 文件头 (ZIP 格式)
+     * @param header 文件头字节
+     * @return 是否是 XLSX 格式
+     */
+    private boolean isXlsxHeader(byte[] header) {
+        // PK\x03\x04
+        return header[0] == 0x50 &&  // P
+                header[1] == 0x4B &&  // K
+                header[2] == 0x03 &&  // ETX
+                header[3] == 0x04;    // EOT
+    }
+
+    /**
+     * 检查 XLS 文件头 (OLE2 复合文档格式)
+     * @param header 文件头字节
+     * @return 是否是 XLS 格式
+     */
+    private boolean isXlsHeader(byte[] header) {
+        // D0 CF 11 E0 A1 B1 1A E1
+        return header[0] == (byte) 0xD0 &&
+                header[1] == (byte) 0xCF &&
+                header[2] == (byte) 0x11 &&
+                header[3] == (byte) 0xE0 &&
+                header[4] == (byte) 0xA1 &&
+                header[5] == (byte) 0xB1 &&
+                header[6] == (byte) 0x1A &&
+                header[7] == (byte) 0xE1;
+    }
+
     private Map<String, Object> xls2Map(String filePath) {
+        try (final FileInputStream fis = new FileInputStream(filePath)){
+            return xls2Map(fis);
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private Map<String, Object> xls2Map(InputStream is) {
         long start = System.currentTimeMillis();
         Map<String, Object> map = new LinkedHashMap<>();
         try (
-                FileInputStream fin = new FileInputStream(filePath);
-                POIFSFileSystem poifs = new POIFSFileSystem(fin);
+                POIFSFileSystem poifs = new POIFSFileSystem(is);
                 InputStream din = poifs.createDocumentInputStream("Workbook")) {
             HSSFRequest req = new HSSFRequest();
             Map<Integer, SheetDataConfig> sheetDataConfigs = config.getSheetDataConfigs();
@@ -121,13 +213,37 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
         return map;
     }
 
-    private Map<String, Object> xlsx2Map(String filePath) {
-        long start = System.currentTimeMillis();
+    private Map<String, Object> xlsx2Map(InputStream filePath) {
         Map<String, Object> map = new LinkedHashMap<>();
-        Map<Integer, SheetDataConfig> sheetDataConfigs = config.getSheetDataConfigs();
         OPCPackage pkg;
         try {
             pkg = OPCPackage.open(filePath);
+            map = xlsx2Map0(pkg);
+        } catch (Throwable e) {
+            //TODO 合理
+            e.printStackTrace();
+        }
+        return map;
+    }
+
+    private Map<String, Object> xlsx2Map(String filePath) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        OPCPackage pkg;
+        try {
+            pkg = OPCPackage.open(filePath);
+            map = xlsx2Map0(pkg);
+        } catch (Throwable e) {
+            //TODO 合理
+            e.printStackTrace();
+        }
+        return map;
+    }
+
+    private Map<String, Object> xlsx2Map0(OPCPackage pkg) {
+        long start = System.currentTimeMillis();
+        Map<String, Object> map = new LinkedHashMap<>();
+        Map<Integer, SheetDataConfig> sheetDataConfigs = config.getSheetDataConfigs();
+        try {
             XSSFReader xssfReader = new XSSFReader(pkg);
             SharedStringsTable sst = (SharedStringsTable) xssfReader.getSharedStringsTable();
             XMLReader parser = XMLHelper.newXMLReader();

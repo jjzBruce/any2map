@@ -1,7 +1,6 @@
 package io.github.jjzbruce.excel;
 
 import io.github.jjzbruce.DataMapWrapper;
-import io.github.jjzbruce.MapKeyType;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.slf4j.Logger;

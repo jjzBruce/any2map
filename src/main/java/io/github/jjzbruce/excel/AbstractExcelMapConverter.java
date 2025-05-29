@@ -20,6 +20,12 @@ public abstract class AbstractExcelMapConverter implements MapConverter<ExcelCon
 
     private Logger log = LoggerFactory.getLogger(AbstractExcelMapConverter.class);
 
+    protected enum ExcelFormat {
+        XLSX,
+        XLS,
+        UNKNOWN
+    }
+
     /**
      * 配置
      */

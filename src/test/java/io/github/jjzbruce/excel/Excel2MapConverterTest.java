@@ -3,22 +3,13 @@ package io.github.jjzbruce.excel;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.jjzbruce.*;
-import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.xssf.streaming.SXSSFRow;
-import org.apache.poi.xssf.streaming.SXSSFSheet;
-import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.junit.Assert;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Random;
 
 /**
  * Xlsx2MapConverter
@@ -27,8 +18,6 @@ import java.util.Random;
  * @since 1.0.0
  */
 public class Excel2MapConverterTest {
-
-    private final Logger log = LoggerFactory.getLogger(this.getClass());
 
     @Test
     public void testXlsxByExcel2MapConverter() throws JsonProcessingException {
@@ -374,98 +363,98 @@ public class Excel2MapConverterTest {
 //        generateBigTestFileBySXSSFSheet(filePath);
 //    }
 
-    public void generateBigTestFileBySXSSFSheet(String filePath) throws IOException {
-        long start = System.currentTimeMillis();
-        SXSSFWorkbook workbook = new SXSSFWorkbook(10000);
-        try (OutputStream out = new FileOutputStream(filePath)) {
-            SXSSFSheet sheet = workbook.createSheet("Sheet1");
-            //100w
-            for (int i = 0; i < 100 * 100 * 10; i++) {
-                SXSSFRow row = sheet.createRow(i);
-                for (int j = 0; j < 100; j++) {
-                    Cell cell = row.createCell(j);
-                    cell.setCellValue(i * j + j);
-                }
-            }
-            long start1 = System.currentTimeMillis();
-            log.debug("数据生成耗时: {}", start1 - start);
-            workbook.write(out);
-            log.debug("写入文件耗时: {}", System.currentTimeMillis() - start1);
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            workbook.dispose();
-        }
-        log.debug("生成文件总耗时: {}", System.currentTimeMillis() - start);
-    }
+//    public void generateBigTestFileBySXSSFSheet(String filePath) throws IOException {
+//        long start = System.currentTimeMillis();
+//        SXSSFWorkbook workbook = new SXSSFWorkbook(10000);
+//        try (OutputStream out = new FileOutputStream(filePath)) {
+//            SXSSFSheet sheet = workbook.createSheet("Sheet1");
+//            //100w
+//            for (int i = 0; i < 100 * 100 * 10; i++) {
+//                SXSSFRow row = sheet.createRow(i);
+//                for (int j = 0; j < 100; j++) {
+//                    Cell cell = row.createCell(j);
+//                    cell.setCellValue(i * j + j);
+//                }
+//            }
+//            long start1 = System.currentTimeMillis();
+//            System.out.printf("数据生成耗时: %s\n", start1 - start);
+//            workbook.write(out);
+//            System.out.printf("写入文件耗时: %s\n", System.currentTimeMillis() - start1);
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        } finally {
+//            workbook.dispose();
+//        }
+//        System.out.printf("生成文件总耗时: %s\n", System.currentTimeMillis() - start);
+//    }
 
-    public void generateBigTestFile(String filePath) throws IOException {
-        long start = System.currentTimeMillis();
-        try (FileOutputStream fileOut = new FileOutputStream(filePath);
-             Workbook workbook = WorkbookFactory.create(true);
-             FileChannel channel = fileOut.getChannel()) {
-            Random random = new Random();
-            Sheet sheet = workbook.createSheet("LargeSheet");
-            int i = 0;
-            for (int writeCnt = 0; writeCnt < 2; writeCnt++) {
-                long start1 = System.currentTimeMillis();
-                for (; i < 500 * (writeCnt + 1); i++) {
-                    Row row = sheet.createRow(i);
-                    for (int colIndex = 0; colIndex < 200; colIndex++) {
-                        Cell cell = row.createCell(colIndex);
-                        cell.setCellValue(random.nextInt());
-                    }
-                }
-
-                log.debug("创建片段[{}]耗时: {}", writeCnt, System.currentTimeMillis() - start1);
-                long start2 = System.currentTimeMillis();
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                workbook.write(baos);
-                ByteBuffer buffer = ByteBuffer.wrap(baos.toByteArray());
-                channel.write(buffer);
-                log.debug("创建片段写入文件[{}]耗时: {}", writeCnt, System.currentTimeMillis() - start2);
-
-//                log.debug("创建片段[{}]耗时: {}", writeCnt, System.currentTimeMillis() - start1);
+//    public void generateBigTestFile(String filePath) throws IOException {
+//        long start = System.currentTimeMillis();
+//        try (FileOutputStream fileOut = new FileOutputStream(filePath);
+//             Workbook workbook = WorkbookFactory.create(true);
+//             FileChannel channel = fileOut.getChannel()) {
+//            Random random = new Random();
+//            Sheet sheet = workbook.createSheet("LargeSheet");
+//            int i = 0;
+//            for (int writeCnt = 0; writeCnt < 2; writeCnt++) {
+//                long start1 = System.currentTimeMillis();
+//                for (; i < 500 * (writeCnt + 1); i++) {
+//                    Row row = sheet.createRow(i);
+//                    for (int colIndex = 0; colIndex < 200; colIndex++) {
+//                        Cell cell = row.createCell(colIndex);
+//                        cell.setCellValue(random.nextInt());
+//                    }
+//                }
+//
+//                System.out.printf("创建片段[%s]耗时: %s\n", writeCnt, System.currentTimeMillis() - start1);
 //                long start2 = System.currentTimeMillis();
-//                workbook.write(fileOut);
-//                log.debug("创建片段写入文件[{}]耗时: {}", writeCnt, System.currentTimeMillis() - start2);
-            }
-        }
-        log.debug("创建耗时: {}", System.currentTimeMillis() - start);
-    }
+//                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+//                workbook.write(baos);
+//                ByteBuffer buffer = ByteBuffer.wrap(baos.toByteArray());
+//                channel.write(buffer);
+//                System.out.printf("创建片段写入文件[%s]耗时: %s\n", writeCnt, System.currentTimeMillis() - start2);
+//
+////                log.debug("创建片段[{}]耗时: {}", writeCnt, System.currentTimeMillis() - start1);
+////                long start2 = System.currentTimeMillis();
+////                workbook.write(fileOut);
+////                log.debug("创建片段写入文件[{}]耗时: {}", writeCnt, System.currentTimeMillis() - start2);
+//            }
+//        }
+//        System.out.printf("创建耗时: %s\n", System.currentTimeMillis() - start);
+//    }
 
     // 使用 RandomAccessFile 的方式持续写入数据
-    public void generateBigTestFileByRandomAccessFile(String filePath) {
-        int size = 1024 * 1024 * 1024;
-        Random random = new Random();
-        int rowNum = 0;
-        while (true) {
-            try (Workbook workbook = new SXSSFWorkbook();
-                 RandomAccessFile fileOut = new RandomAccessFile(filePath, "rw")) {
-                Sheet sheet;
-                if (rowNum == 0) {
-                    sheet = workbook.createSheet("LargeSheet");
-                } else {
-                    sheet = workbook.getSheet("largeSheet");
-                }
-
-                int total = rowNum + 100;
-                for (int i = rowNum; i < total; i++) {
-                    Row row = sheet.createRow(i);
-                    for (int colIndex = 0; colIndex < 100; colIndex++) {
-                        Cell cell = row.createCell(colIndex);
-                        cell.setCellValue(random.nextInt());
-                    }
-                }
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                workbook.write(baos);
-                fileOut.write(baos.toByteArray());
-                System.out.println("1GB XLSX file generated successfully.");
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-
-    }
+//    public void generateBigTestFileByRandomAccessFile(String filePath) {
+//        int size = 1024 * 1024 * 1024;
+//        Random random = new Random();
+//        int rowNum = 0;
+//        while (true) {
+//            try (Workbook workbook = new SXSSFWorkbook();
+//                 RandomAccessFile fileOut = new RandomAccessFile(filePath, "rw")) {
+//                Sheet sheet;
+//                if (rowNum == 0) {
+//                    sheet = workbook.createSheet("LargeSheet");
+//                } else {
+//                    sheet = workbook.getSheet("largeSheet");
+//                }
+//
+//                int total = rowNum + 100;
+//                for (int i = rowNum; i < total; i++) {
+//                    Row row = sheet.createRow(i);
+//                    for (int colIndex = 0; colIndex < 100; colIndex++) {
+//                        Cell cell = row.createCell(colIndex);
+//                        cell.setCellValue(random.nextInt());
+//                    }
+//                }
+//                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+//                workbook.write(baos);
+//                fileOut.write(baos.toByteArray());
+//                System.out.println("1GB XLSX file generated successfully.");
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+//        }
+//
+//    }
 
 }

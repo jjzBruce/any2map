@@ -88,39 +88,54 @@ public class Excel2MapConverterByEvent extends AbstractExcelMapConverter {
         return new DataMapWrapper(this.excelHead, data);
     }
 
-    /**
-     * 检测 Excel 文件格式
-     * @param input 输入流
-     * @return 文件格式枚举
-     * @throws IOException 读取异常
-     */
     private ExcelFormat detectExcelFormat(InputStream input) throws IOException {
-        // 标记当前位置，最多读取 8 字节后重置
         input.mark(8);
-
-        // 读取文件头
         byte[] header = new byte[8];
         int bytesRead = input.read(header);
-
-        // 重置流到标记位置
         input.reset();
 
-        // 文件太短无法判断
         if (bytesRead < 4) {
             return ExcelFormat.UNKNOWN;
         }
 
-        // 检查 XLSX 格式 (PK\x03\x04)
+        // 检查XLSX
         if (isXlsxHeader(header)) {
             return ExcelFormat.XLSX;
         }
 
-        // 检查 XLS 格式 (D0 CF 11 E0 A1 B1 1A E1)
+        // 检查XLS
         if (bytesRead == 8 && isXlsHeader(header)) {
             return ExcelFormat.XLS;
         }
 
+        // 新增CSV检测：UTF-8 BOM或文本特征
+        if (isCsvHeader(header, bytesRead)) {
+            return ExcelFormat.CSV; // 新增枚举值
+        }
+
+        log.error("detectExcelFormat UNKNOWN InputStream: {}", header);
         return ExcelFormat.UNKNOWN;
+    }
+
+    // 新增CSV检测方法
+    private boolean isCsvHeader(byte[] header, int length) {
+        // UTF-8 BOM检测 (EF BB BF)
+        if (length >= 3 &&
+                header[0] == (byte) 0xEF &&
+                header[1] == (byte) 0xBB &&
+                header[2] == (byte) 0xBF) {
+            return true;
+        }
+
+        // 文本特征检测（可打印字符）
+        int printableCount = 0;
+        for (int i = 0; i < length; i++) {
+            byte b = header[i];
+            if ((b >= 0x20 && b <= 0x7E) || b == '\n' || b == '\r' || b == '\t') {
+                printableCount++;
+            }
+        }
+        return printableCount >= length * 0.8; // 80%是可打印字符
     }
 
     /**

@@ -23,6 +23,7 @@ public abstract class AbstractExcelMapConverter implements MapConverter<ExcelCon
     protected enum ExcelFormat {
         XLSX,
         XLS,
+        CSV,
         UNKNOWN
     }
 
